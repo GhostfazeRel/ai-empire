@@ -1,0 +1,13 @@
+{
+  "name": "ai-empire",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser game: build and run your own AI company.",
+  "scripts": {
+    "start": "npx --yes serve .",
+    "test": "node tests/game.test.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}

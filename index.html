@@ -1,0 +1,2429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI EMPIRE - Complete AI Company Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Corporate tycoon theme: warm leather darks, brass and gold, serif headline figures */
+        :root {
+            --bg: #0e0b07;
+            --bg-glow: radial-gradient(1100px 600px at 80% -15%, rgba(212, 175, 55, .10), transparent 60%), radial-gradient(800px 500px at -10% 110%, rgba(140, 60, 30, .14), transparent 60%);
+            --panel: #15100a;
+            --card: #1a140d;
+            --card-solid: #1f1810;
+            --card-hover: #261d13;
+            --line: rgba(212, 175, 55, .13);
+            --line-strong: rgba(212, 175, 55, .28);
+            --text: #f4ecdb;
+            --muted: #a99878;
+            --accent: #e2b84f;
+            --accent-2: #f5dc96;
+            --gradient: linear-gradient(135deg, #f6dd8f 0%, #d4a63a 45%, #a8771f 100%);
+            --good: #8fcf7c;
+            --bad: #e57560;
+            --warn: #f0a94a;
+            --radius: 10px;
+            --shadow: 0 1px 0 rgba(255, 230, 170, .05) inset, 0 14px 30px -16px rgba(0, 0, 0, .9);
+            --serif: "Playfair Display", Georgia, "Times New Roman", serif;
+            --sb: 256px;
+            /* legacy names still referenced inline */
+            --accent-blue: var(--accent);
+            --border-color: var(--line);
+            --text-secondary: var(--muted);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            background: var(--bg-glow), var(--bg);
+            background-attachment: fixed;
+            color: var(--text);
+            font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+        h1 {
+            font-family: var(--serif); font-size: 34px; font-weight: 700; letter-spacing: .01em;
+            margin-bottom: 26px; padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(90deg, var(--text), var(--accent-2) 60%, var(--accent));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        h2, h3 { font-family: var(--serif); font-weight: 700; color: var(--accent-2); margin: 22px 0 12px; letter-spacing: .01em; }
+        h3 { font-size: 19px; }
+        p { color: var(--muted); }
+        ::selection { background: rgba(212, 175, 55, .35); }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        /* Layout */
+        #app-container { display: flex; height: 100vh; }
+        #app-container:has(#sidebar.collapsed) { --sb: 76px; }
+        #sidebar {
+            width: var(--sb); flex-shrink: 0;
+            background: linear-gradient(180deg, #19120a, #100c07);
+            border-right: 1px solid var(--line-strong);
+            box-shadow: 1px 0 0 rgba(0, 0, 0, .6);
+            display: flex; flex-direction: column;
+            transition: width .25s ease; overflow: hidden;
+        }
+        .sidebar-header { padding: 22px 16px 18px; border-bottom: 1px solid var(--line); }
+        .logo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .company-logo {
+            width: 44px; height: 44px; flex-shrink: 0;
+            display: grid; place-items: center;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: #2a1c08;
+            font-family: var(--serif); font-weight: 800; font-size: 16px;
+            border: 2px solid #3a2a12;
+            box-shadow: 0 0 0 1px var(--accent), 0 8px 20px -8px rgba(212, 175, 55, .8);
+        }
+        .company-name { font-family: var(--serif); font-weight: 700; font-size: 18px; letter-spacing: .04em; color: var(--accent-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-menu { list-style: none; padding: 12px 10px; overflow-y: auto; flex: 1; }
+        .sidebar-menu li { margin: 1px 0; }
+        .sidebar-menu ul { list-style: none; }
+        .sidebar-menu details { margin-bottom: 6px; }
+        .sidebar-menu summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); opacity: .75; white-space: nowrap; }
+        .sidebar-menu summary::-webkit-details-marker { display: none; }
+        .sidebar-menu summary::after { content: "▾"; transition: transform .2s; }
+        .sidebar-menu details:not([open]) summary::after { transform: rotate(-90deg); }
+        .sidebar-menu summary:hover { opacity: 1; }
+        #sidebar.collapsed .sidebar-menu summary { font-size: 0; padding: 6px 0; justify-content: center; border-top: 1px solid var(--line); }
+        #sidebar.collapsed .sidebar-menu summary::after { font-size: 11px; }
+        @media (max-width: 768px) { .sidebar-menu summary { font-size: 0; padding: 6px 0; justify-content: center; border-top: 1px solid var(--line); } .sidebar-menu summary::after { font-size: 11px; } }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 12px;
+            padding: 9px 12px; border-radius: 6px;
+            color: var(--muted); text-decoration: none;
+            font-size: 14px; font-weight: 500; white-space: nowrap;
+            transition: background .15s, color .15s;
+        }
+        .sidebar-menu a:hover { background: rgba(212, 175, 55, .06); color: var(--text); }
+        .sidebar-menu a.active { background: linear-gradient(90deg, rgba(212, 175, 55, .18), rgba(212, 175, 55, .02)); color: var(--accent-2); box-shadow: inset 3px 0 0 var(--accent); }
+        .sidebar-menu i { font-style: normal; font-size: 17px; width: 24px; text-align: center; flex-shrink: 0; filter: sepia(.35) saturate(.9); }
+        #sidebar.collapsed .menu-text, #sidebar.collapsed .company-name { display: none; }
+        #sidebar.collapsed .sidebar-menu a { justify-content: center; padding: 10px 0; }
+        #sidebar.collapsed .logo { justify-content: center; }
+        .toggle-sidebar {
+            position: fixed; top: 30px; left: calc(var(--sb) - 13px); z-index: 50;
+            width: 26px; height: 26px; display: grid; place-items: center;
+            border-radius: 50%;
+            background: var(--card-solid); border: 1px solid var(--line-strong);
+            color: var(--accent); font-size: 11px; cursor: pointer;
+            transition: left .25s ease, color .15s;
+        }
+        .toggle-sidebar:hover { color: var(--accent-2); }
+
+        #main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+        #top-bar {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+            padding: 12px 32px;
+            border-bottom: 1px solid var(--line-strong);
+            background: linear-gradient(180deg, rgba(31, 24, 16, .95), rgba(20, 15, 9, .95));
+        }
+        .time-display {
+            font-family: var(--serif); font-weight: 700; font-size: 15px; letter-spacing: .03em;
+            padding: 6px 14px; border-radius: 4px;
+            background: linear-gradient(180deg, #2b2113, #1c150c);
+            border: 1px solid var(--line-strong);
+            color: var(--accent-2);
+            box-shadow: inset 0 1px 0 rgba(255, 230, 170, .08);
+            font-variant-numeric: tabular-nums;
+        }
+        .speed-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .speed-controls .active { background: var(--gradient); color: #2a1c08; border-color: transparent; }
+        .user-info { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--accent-2); }
+        .user-avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--card-hover); border: 1px solid var(--accent); color: var(--accent); font-size: 12px; font-weight: 700; }
+
+        #page-container { flex: 1; overflow-y: auto; padding: 34px 36px; }
+        .page-content { display: none; max-width: 1280px; margin: 0 auto; animation: fade .3s ease; }
+        .page-content.active { display: block; }
+        @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+        /* Cards: ledger panels with a brass hairline */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; margin-bottom: 18px; }
+        .card {
+            position: relative;
+            background: linear-gradient(180deg, var(--card-solid), var(--card));
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 22px;
+            box-shadow: var(--shadow);
+            margin-bottom: 18px;
+            transition: border-color .2s;
+        }
+        .card::before { content: ""; position: absolute; left: 18px; right: 18px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: .55; }
+        .dashboard-grid .card { margin-bottom: 0; }
+        .card:hover { border-color: var(--line-strong); }
+        .card .card { background: rgba(255, 235, 190, .025); box-shadow: none; padding: 16px; margin-bottom: 10px !important; }
+        .card .card::before { display: none; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .card-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: var(--accent); }
+        .card .card .card-title { font-family: var(--serif); font-size: 17px; text-transform: none; letter-spacing: .01em; color: var(--text); }
+        .card-value { font-family: var(--serif); font-size: 36px; font-weight: 800; letter-spacing: .005em; color: var(--accent-2); font-variant-numeric: lining-nums tabular-nums; margin-bottom: 10px; text-shadow: 0 2px 12px rgba(212, 175, 55, .18); }
+        .positive { color: var(--good); }
+        .negative { color: var(--bad); }
+        .chart-container { min-height: 180px; border-radius: 6px; padding: 8px; background: repeating-linear-gradient(0deg, transparent 0 35px, var(--line) 35px 36px), rgba(0, 0, 0, .18); }
+        .muted { color: var(--muted); }
+
+        .model-stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .model-stats span span { color: var(--text); font-weight: 700; }
+        #transactions .model-stats, #ranking-list .model-stats, #event-list .model-stats { justify-content: space-between; padding: 10px 4px; border-bottom: 1px dashed var(--line); }
+        #transactions .model-stats:last-child, #ranking-list .model-stats:last-child, #event-list .model-stats:last-child { border-bottom: 0; }
+        #ranking-list .model-stats:first-child span:first-child::before { content: "👑 "; }
+
+        .model-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+        .model-card {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, var(--card-solid), var(--card));
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+        .model-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--gradient); }
+        .model-name { font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--accent-2); margin-bottom: 2px; }
+        .model-version { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 12px; }
+        .model-card > .btn, .card .card > .btn { margin-top: 14px; }
+
+        /* Tables, grids, states */
+        .xtable { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 8px; }
+        .xtable th { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
+        .xtable th, .xtable td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+        .xtable td { vertical-align: middle; padding: 14px 12px; white-space: nowrap; }
+        .xtable th { padding: 10px 12px; }
+        #models-page .xtable td:last-child { white-space: normal; width: 100%; }
+        .xtable .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .xtable small { color: var(--muted); }
+        .xtable tbody tr:hover { background: rgba(212, 175, 55, .04); }
+        #models-page .model-name { font-size: 17px; margin: 0; }
+        #models-page .model-version { margin: 2px 0 0; font-size: 11px; }
+        #models-page .row-actions { margin: 0; align-items: center; }
+        #models-page .td-actions .btn, #models-page .row-actions .btn { margin: 0; padding: 5px 10px; font-size: 12px; }
+        /* List items inside a card render as table rows, like the AI Models table */
+        .xgrid { display: block !important; }
+        .card .card {
+            display: grid; grid-template-columns: minmax(170px, 1fr) 2.2fr auto; gap: 4px 24px; align-items: center;
+            background: none !important; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+            box-shadow: none; padding: 14px 12px; margin: 0 !important; transform: none !important;
+        }
+        .card .card:hover { background: rgba(212, 175, 55, .04) !important; }
+        .card .card > .card-header { margin: 0; }
+        .card .card .card-title { font-family: var(--serif); font-size: 17px; font-weight: 700; color: var(--accent-2); }
+        .card .card > :not(.card-header):not(.model-stats):not(.row-actions):not(.btn) { grid-column: 2 / -1; }
+        .card .card .model-stats { font-size: 13px; gap: 4px 18px; }
+        .card .card .row-actions { margin: 0; justify-content: flex-end; }
+        .card .card .btn { margin: 0 !important; padding: 5px 10px; font-size: 12px; }
+        .card .card.owned { box-shadow: inset 3px 0 0 var(--good); border-color: var(--line) !important; }
+        .card .card.locked .card-title { color: var(--muted); }
+        @media (max-width: 900px) { .card .card { grid-template-columns: 1fr; } .card .card .row-actions { justify-content: flex-start; } }
+        .xtable tr.fam th { padding: 22px 12px 8px; font-family: var(--serif); font-size: 20px; text-transform: none; letter-spacing: 0; color: var(--accent-2); border-bottom: 1px solid var(--line-strong); }
+        .xtable tr.fam:first-child th { padding-top: 6px; }
+        .xtable tr.fam th { cursor: pointer; user-select: none; }
+        .xtable tr.fam th::before { content: "▾"; display: inline-block; width: 18px; font-size: 14px; color: var(--accent); transition: transform .2s; }
+        .xtable tr.fam.closed th::before { transform: rotate(-90deg); }
+        .xtable tr.fam th .btn { float: right; padding: 5px 10px; font-size: 12px; font-family: Inter, sans-serif; text-transform: none; letter-spacing: 0; }
+        .xtable tr.fam th span { font-family: Inter, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-left: 10px; }
+        .seg { display: inline-flex; }
+        .seg .btn { border-radius: 0; margin-left: -1px !important; text-transform: capitalize; }
+        .seg .btn:first-child { border-radius: 6px 0 0 6px; } .seg .btn:last-child { border-radius: 0 6px 6px 0; }
+        .seg .btn.on { background: var(--gradient); color: #1a1208; box-shadow: none; }
+        .status { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); }
+        .st-released { color: var(--good); border-color: currentColor; }
+        .st-training { color: var(--warn); border-color: currentColor; }
+        .st-trained { color: var(--accent); border-color: currentColor; }
+        .xtable tr:hover td { background: rgba(212, 175, 55, .04); }
+        .xtable th[data-sort] { cursor: pointer; }
+        .xtable th[data-sort]:hover { color: var(--accent-2); }
+        .xtable tr.best td { color: var(--accent-2); font-weight: 700; }
+        .row-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .xgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .spark { width: 100%; height: 140px; }
+        .locked { opacity: .5; filter: grayscale(.4); }
+        .owned { border-color: var(--accent) !important; box-shadow: 0 0 0 1px rgba(212, 175, 55, .35) inset; }
+        .ev-good { color: var(--good); } .ev-bad { color: var(--bad); }
+
+        /* Forms */
+        .form-group { margin-bottom: 18px; }
+        .form-group label, .form-label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+        .hint { font-size: 13px; color: var(--muted); margin: -2px 0 8px; line-height: 1.45; } .hint b { color: var(--text); font-weight: 600; }
+        .form-group:has(> .btn) { display: flex; flex-wrap: wrap; gap: 10px; }
+        .form-control, .dropdown-trigger {
+            width: 100%; padding: 11px 14px;
+            background: #120d08;
+            border: 1px solid var(--line-strong);
+            border-radius: 6px;
+            color: var(--text); font: inherit;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(212, 175, 55, .15); }
+        select.form-control { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%), linear-gradient(135deg, var(--accent) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
+        select.form-control option { background: var(--card-solid); }
+        .dropdown-container { position: relative; }
+        .dropdown-trigger { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .dropdown-trigger:hover { border-color: var(--accent); }
+        .dropdown-options {
+            display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+            max-height: 280px; overflow-y: auto; padding: 6px;
+            background: var(--card-solid); border: 1px solid var(--line-strong); border-radius: 8px;
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, .85);
+        }
+        .dropdown-option { padding: 9px 12px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .dropdown-option:hover { background: rgba(212, 175, 55, .08); }
+        .dropdown-option.selected { background: rgba(212, 175, 55, .16); color: var(--accent-2); }
+
+        /* Buttons: polished brass */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 18px;
+            border: 1px solid #8a6418;
+            border-radius: 6px;
+            background: var(--gradient);
+            color: #2a1c08;
+            font: inherit; font-weight: 700; font-size: 14px; letter-spacing: .02em;
+            cursor: pointer;
+            text-shadow: 0 1px 0 rgba(255, 240, 200, .4);
+            box-shadow: inset 0 1px 0 rgba(255, 245, 210, .6), 0 6px 16px -8px rgba(212, 175, 55, .8);
+            transition: transform .12s, box-shadow .15s, filter .15s;
+        }
+        .btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); filter: brightness(.95); }
+        .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; filter: grayscale(.5); }
+        .btn-secondary, .btn-ghost { background: transparent; color: var(--accent-2); border: 1px solid var(--line-strong); box-shadow: none; text-shadow: none; }
+        .btn-secondary:hover, .btn-ghost:hover { background: rgba(212, 175, 55, .08); border-color: var(--accent); }
+        .btn-danger { background: rgba(229, 117, 96, .1); color: var(--bad); border: 1px solid rgba(229, 117, 96, .4); box-shadow: none; text-shadow: none; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+        /* Save manager */
+        #save-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+        .save-slot { padding: 16px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 235, 190, .025); display: flex; flex-direction: column; gap: 10px; }
+        .save-slot.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+        .save-slot-title { display: flex; justify-content: space-between; align-items: center; font-family: var(--serif); font-weight: 700; font-size: 17px; }
+        .save-slot-meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 40px; }
+        .save-slot-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 4px 9px; border-radius: 4px; background: rgba(212, 175, 55, .14); color: var(--accent-2); border: 1px solid var(--line-strong); }
+
+        /* Notifications: telegram slips */
+        #notifications { position: fixed; right: 22px; bottom: 22px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+        .notification {
+            max-width: 360px; padding: 12px 16px 12px 14px;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #2a2014, #1d160d);
+            border: 1px solid var(--line-strong);
+            border-left: 3px solid var(--accent);
+            box-shadow: 0 16px 40px -12px rgba(0, 0, 0, .9);
+            font-size: 14px;
+            animation: toast .3s ease;
+        }
+        .notification.success { border-left-color: var(--good); }
+        .notification.error { border-left-color: var(--bad); }
+        @keyframes toast { from { opacity: 0; transform: translateY(10px) scale(.98); } }
+
+        #start-screen { position: fixed; inset: 0; z-index: 950; display: grid; place-items: center; text-align: center; background: rgba(7, 9, 15, .7); backdrop-filter: blur(6px); }
+        #start-screen.new { background: var(--bg-glow), var(--bg); }
+        #start-screen[hidden] { display: none; }
+        #start-screen h1 { font-size: 48px; background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        #start-screen .btn { font-size: 18px; padding: 14px 32px; margin-top: 18px; }
+
+        /* Modal */
+        #modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .7); backdrop-filter: blur(4px); display: none; place-items: center; z-index: 900; }
+        .modal { background: var(--card-solid); border: 1px solid var(--line-strong); border-radius: 10px; width: min(560px, 92vw); box-shadow: var(--shadow); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+        .modal-title { font-family: var(--serif); font-weight: 700; color: var(--accent-2); }
+        .modal-body { padding: 20px; }
+        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 10px; }
+
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+        /* Small screens: icon rail instead of a hidden drawer */
+        @media (max-width: 768px) {
+            #app-container { --sb: 64px; }
+            .menu-text, .company-name { display: none; }
+            .sidebar-menu a { justify-content: center; padding: 10px 0; }
+            .logo { justify-content: center; }
+            .toggle-sidebar { display: none; }
+            #page-container { padding: 20px 16px; }
+            #top-bar { padding: 10px 16px; }
+            h1 { font-size: 26px; }
+            .card-value { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="company-logo" id="company-logo">AI</div>
+                    <div class="company-name" id="company-name">AI EMPIRE</div>
+                </div>
+            </div>
+            <nav class="sidebar-menu">
+                <details open data-group="Overview"><summary>Overview</summary><ul>
+                    <li><a href="#" data-page="dashboard"><i>📊</i> <span class="menu-text">Dashboard</span></a></li>
+                    <li><a href="#" data-page="rankings"><i>🏆</i> <span class="menu-text">Global Rankings</span></a></li>
+                    <li><a href="#" data-page="achievements"><i>⭐</i> <span class="menu-text">Achievements</span></a></li>
+                    <li><a href="#" data-page="events"><i>📰</i> <span class="menu-text">News & Events</span></a></li>
+                </ul></details>
+                <details open data-group="Models"><summary>Models</summary><ul>
+                    <li><a href="#" data-page="models"><i>🤖</i> <span class="menu-text">AI Models</span></a></li>
+                    <li><a href="#" data-page="create-model"><i>⚙️</i> <span class="menu-text">Create Model</span></a></li>
+                    <li><a href="#" data-page="training"><i>🔬</i> <span class="menu-text">Training Center</span></a></li>
+                    <li><a href="#" data-page="benchmarks"><i>🏆</i> <span class="menu-text">Benchmark Lab</span></a></li>
+                    <li><a href="#" data-page="compare"><i>📊</i> <span class="menu-text">Model Comparison</span></a></li>
+                </ul></details>
+                <details open data-group="Company"><summary>Company</summary><ul>
+                    <li><a href="#" data-page="employees"><i>👥</i> <span class="menu-text">Employees</span></a></li>
+                    <li><a href="#" data-page="infrastructure"><i>🏭</i> <span class="menu-text">Infrastructure</span></a></li>
+                    <li><a href="#" data-page="research"><i>🔬</i> <span class="menu-text">Research Tree</span></a></li>
+                </ul></details>
+                <details open data-group="Business"><summary>Business</summary><ul>
+                    <li><a href="#" data-page="economy"><i>💰</i> <span class="menu-text">Economy</span></a></li>
+                    <li><a href="#" data-page="investors"><i>💼</i> <span class="menu-text">Investors</span></a></li>
+                    <li><a href="#" data-page="negotiations"><i>🤝</i> <span class="menu-text">Negotiations</span></a></li>
+                    <li><a href="#" data-page="marketing"><i>📣</i> <span class="menu-text">Marketing</span></a></li>
+                    <li><a href="#" data-page="conferences"><i>🏛️</i> <span class="menu-text">Conferences</span></a></li>
+                </ul></details>
+                <details open data-group="World"><summary>World</summary><ul>
+                    <li><a href="#" data-page="competitors"><i>⚔️</i> <span class="menu-text">Competitors</span></a></li>
+                    <li><a href="#" data-page="government"><i>🏛️</i> <span class="menu-text">Government</span></a></li>
+                </ul></details>
+                <ul>
+                    <li><a href="#" data-page="settings"><i>⚙️</i> <span class="menu-text">Settings</span></a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Toggle Button -->
+        <div class="toggle-sidebar" id="toggle-sidebar">◀</div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <div id="top-bar">
+                <div class="time-display" id="current-time">Loading...</div>
+                <div class="speed-controls" role="group" aria-label="Game speed">
+                    <button class="btn btn-ghost btn-sm" data-speed="0" title="Pause (Space)">⏸</button>
+                    <button class="btn btn-ghost btn-sm" data-speed="1" title="Normal speed (1)">1×</button>
+                    <button class="btn btn-ghost btn-sm" data-speed="2" title="Fast (2)">2×</button>
+                    <button class="btn btn-ghost btn-sm" data-speed="5" title="Very fast (3)">5×</button>
+                    <button class="btn btn-ghost btn-sm" id="sound-toggle" title="Sound on/off" aria-pressed="true">🔊</button>
+                    <span class="badge" id="hype-badge" title="Hype boosts income and decays daily">🔥 0</span>
+                    <span class="badge" id="market-badge" title="The whole AI market: a boom raises every model's income, a bust cuts it">📊 Stable</span>
+                    <span class="badge" id="day-badge">Day 0</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">AI</div>
+                    <span id="player-name">Player</span>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div id="page-container">
+                <!-- Dashboard Page -->
+                <div class="page-content active" id="dashboard-page">
+                    <h1>Dashboard</h1>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Financial Overview</div>
+                            </div>
+                            <div class="card-value positive" id="balance">$0</div>
+                            <div class="model-stats">
+                                <span>Daily Income: <span id="daily-income">$0</span></span>
+                                <span>Daily Expenses: <span id="daily-expenses">$0</span></span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Research Progress</div>
+                            </div>
+                            <div class="card-value" id="research-points">0</div>
+                            <div class="model-stats">
+                                <span>Active Projects: <span id="active-projects">0</span></span>
+                                <span>Total Models: <span id="total-models">0</span></span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Company Status</div>
+                            </div>
+                            <div class="card-value" id="company-reputation">0</div>
+                            <div class="model-stats">
+                                <span>Employees: <span id="employee-count">0</span></span>
+                                <span>Market Share: <span id="market-share">0%</span></span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Global Position</div>
+                            </div>
+                            <div class="card-value" id="company-ranking">-</div>
+                            <div class="model-stats">
+                                <span>Valuation: <span id="company-valuation">$0</span></span>
+                                <span>Models Released: <span id="released-models">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Revenue Over Time</div>
+                            </div>
+                            <div class="chart-container" id="revenue-chart"></div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Company Valuation</div>
+                            </div>
+                            <div class="chart-container" id="valuation-chart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Models Page -->
+                <div class="page-content" id="models-page">
+                    <h1>AI Models</h1>
+                    <div class="card" style="overflow-x: auto">
+                        <table class="xtable">
+                            <thead><tr><th>Version</th><th>Status</th><th class="num">Score</th><th class="num">Earning</th><th>Actions</th></tr></thead>
+                            <tbody id="model-list"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Create Model Page -->
+                <div class="page-content" id="create-model-page">
+                    <h1>Create New AI Model</h1>
+                    <form id="model-creation-form">
+                        <div class="form-group">
+                            <label>Model Name</label>
+                            <input type="text" class="form-control" id="model-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Version Number</label>
+                            <input type="text" class="form-control" id="model-version" value="1.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Model Family</label>
+                            <p class="hint">The kind of AI you're building.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="model-family-trigger">
+                                    <span>Select Model Family</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="model-family-options">
+                                    <div class="dropdown-option" data-value="general">General-purpose LLM</div>
+                                    <div class="dropdown-option" data-value="coding">Coding Model</div>
+                                    <div class="dropdown-option" data-value="reasoning">Reasoning Model</div>
+                                    <div class="dropdown-option" data-value="multimodal">Multimodal Model</div>
+                                    <div class="dropdown-option" data-value="image">Image Model</div>
+                                    <div class="dropdown-option" data-value="video">Video Model</div>
+                                    <div class="dropdown-option" data-value="speech">Speech Model</div>
+                                    <div class="dropdown-option" data-value="scientific">Scientific Model</div>
+                                    <div class="dropdown-option" data-value="agent">Autonomous Agent</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="model-family" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Architecture</label>
+                            <p class="hint">The model's internal design. <b>Transformer</b>: the proven standard. <b>Dense</b>: every part of the model works on every word, so it's smarter but 20% pricier to train. <b>Mixture of Experts</b>: only a few specialist sub-models run at a time, so it's 20% cheaper and a bit smarter. <b>Custom</b>: an untested design, a gamble that can turn out much better or worse.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="model-architecture-trigger">
+                                    <span>Select Architecture</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="model-architecture-options">
+                                    <div class="dropdown-option" data-value="transformer">Transformer</div>
+                                    <div class="dropdown-option" data-value="dense">Dense</div>
+                                    <div class="dropdown-option" data-value="moe">Mixture of Experts (MoE)</div>
+                                    <div class="dropdown-option" data-value="custom">Custom Experimental Architecture</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="model-architecture" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Model Size (Parameters)</label>
+                            <p class="hint">Parameters are the model's "brain cells" (B = billion, T = trillion). Bigger is smarter but costs a lot more to train.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="model-size-trigger">
+                                    <span>Select Model Size</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="model-size-options">
+                                    <div class="dropdown-option" data-value="1b">1B parameters</div>
+                                    <div class="dropdown-option" data-value="3b">3B parameters</div>
+                                    <div class="dropdown-option" data-value="7b">7B parameters</div>
+                                    <div class="dropdown-option" data-value="14b">14B parameters</div>
+                                    <div class="dropdown-option" data-value="30b">30B parameters</div>
+                                    <div class="dropdown-option" data-value="70b">70B parameters</div>
+                                    <div class="dropdown-option" data-value="120b">120B parameters</div>
+                                    <div class="dropdown-option" data-value="200b">200B parameters</div>
+                                    <div class="dropdown-option" data-value="300b">300B parameters</div>
+                                    <div class="dropdown-option" data-value="400b">400B parameters</div>
+                                    <div class="dropdown-option" data-value="600b">600B parameters</div>
+                                    <div class="dropdown-option" data-value="1t">1T parameters</div>
+                                    <div class="dropdown-option" data-value="1.5t">1.5T parameters</div>
+                                    <div class="dropdown-option" data-value="2t">2T parameters</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="model-size" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Precision</label>
+                            <p class="hint">How exactly each number inside the model is stored. <b>FP32</b>: full detail, slightly smarter, +50% cost. <b>FP16 / BF16</b>: the normal choice (BF16 is a bit more stable). <b>INT8 / INT4</b>: compressed, much cheaper, but noticeably dumber.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="model-precision-trigger">
+                                    <span>Select Precision</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="model-precision-options">
+                                    <div class="dropdown-option" data-value="fp32">FP32</div>
+                                    <div class="dropdown-option" data-value="fp16">FP16</div>
+                                    <div class="dropdown-option" data-value="bf16">BF16</div>
+                                    <div class="dropdown-option" data-value="int8">INT8</div>
+                                    <div class="dropdown-option" data-value="int4">INT4</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="model-precision" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Context Window</label>
+                            <p class="hint">How much text the model can read at once (1K tokens ≈ 750 words). A longer window lets customers send whole documents, so it earns more, but it costs more to train.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="model-context-trigger">
+                                    <span>Select Context Window</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="model-context-options">
+                                    <div class="dropdown-option" data-value="8k">8K tokens</div>
+                                    <div class="dropdown-option" data-value="32k">32K tokens</div>
+                                    <div class="dropdown-option" data-value="128k">128K tokens</div>
+                                    <div class="dropdown-option" data-value="1m">1M tokens</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="model-context" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Safety Tuning</label>
+                            <p class="hint">How much the model is trained to refuse harmful requests. <b>None</b>: cheapest and slightly smarter, but customers trust it less, so it earns less. <b>Strict</b>: costs more and is a bit less capable, but businesses pay more for it.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="model-safety-trigger">
+                                    <span>Select Safety Tuning</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="model-safety-options">
+                                    <div class="dropdown-option" data-value="none">None</div>
+                                    <div class="dropdown-option" data-value="standard">Standard</div>
+                                    <div class="dropdown-option" data-value="strict">Strict</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="model-safety" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Training Data Quality</label>
+                            <p class="hint">Cleaner, hand-checked training data makes a smarter model but costs more. <b>Specialized</b>: expert datasets, the best quality.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="data-quality-trigger">
+                                    <span>Select Data Quality</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="data-quality-options">
+                                    <div class="dropdown-option" data-value="basic">Basic</div>
+                                    <div class="dropdown-option" data-value="standard">Standard</div>
+                                    <div class="dropdown-option" data-value="high">High quality</div>
+                                    <div class="dropdown-option" data-value="premium">Premium</div>
+                                    <div class="dropdown-option" data-value="specialized">Specialized datasets</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="data-quality" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Training Duration</label>
+                            <p class="hint">Longer training makes a smarter model but costs more. Quick: 10 days, Standard: 20, Extended: 40, Experimental: 60.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="training-duration-trigger">
+                                    <span>Select Training Duration</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="training-duration-options">
+                                    <div class="dropdown-option" data-value="quick">Quick training</div>
+                                    <div class="dropdown-option" data-value="standard">Standard training</div>
+                                    <div class="dropdown-option" data-value="extended">Extended training</div>
+                                    <div class="dropdown-option" data-value="experimental">Experimental training</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="training-duration" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Training Objectives</label>
+                            <p class="hint">What the model is mainly taught to be good at.</p>
+                            <div class="dropdown-container">
+                                <div class="dropdown-trigger" id="training-objectives-trigger">
+                                    <span>Select Training Objectives</span>
+                                    <span>▼</span>
+                                </div>
+                                <div class="dropdown-options" id="training-objectives-options">
+                                    <div class="dropdown-option" data-value="general">General knowledge</div>
+                                    <div class="dropdown-option" data-value="mathematics">Mathematics</div>
+                                    <div class="dropdown-option" data-value="programming">Programming</div>
+                                    <div class="dropdown-option" data-value="reasoning">Logical reasoning</div>
+                                    <div class="dropdown-option" data-value="writing">Creative writing</div>
+                                    <div class="dropdown-option" data-value="scientific">Scientific knowledge</div>
+                                    <div class="dropdown-option" data-value="multilingual">Multilingual capabilities</div>
+                                    <div class="dropdown-option" data-value="instruction">Instruction following</div>
+                                    <div class="dropdown-option" data-value="agentic">Agentic capabilities</div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="training-objectives" required>
+                        </div>
+                        <button type="submit" class="btn">Create Model</button>
+                    </form>
+                </div>
+
+                <!-- Training Center Page -->
+                <div class="page-content" id="training-page">
+                    <h1>Training Center</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Active Training Projects</div>
+                        </div>
+                        <div id="training-projects">
+                            <!-- Training projects will be listed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benchmark Lab Page -->
+                <div class="page-content" id="benchmarks-page">
+                    <h1>Benchmark Laboratory</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Model Benchmarks</div>
+                        </div>
+                        <div id="benchmark-results">
+                            <!-- Benchmark results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Comparison Page -->
+                <div class="page-content" id="compare-page">
+                    <h1>Model Comparison</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Compare Models</div>
+                        </div>
+                        <div id="comparison-results">
+                            <!-- Comparison results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Economy Page -->
+                <div class="page-content" id="economy-page">
+                    <h1>Financial Management</h1>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Cash Flow</div>
+                            </div>
+                            <div class="card-value positive" id="cash-flow">$0</div>
+                            <div class="model-stats">
+                                <span>Income: <span id="income">$0</span></span>
+                                <span>Expenses: <span id="expenses">$0</span></span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Investments</div>
+                            </div>
+                            <div class="card-value positive" id="total-investments">$0</div>
+                            <div class="model-stats">
+                                <span>Debt: <span id="debt">$0</span></span>
+                                <span>Taxes: <span id="taxes">$0</span></span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">Company Valuation</div>
+                            </div>
+                            <div class="card-value positive" id="company-val">$0</div>
+                            <div class="model-stats">
+                                <span>Revenue: <span id="monthly-revenue">$0</span></span>
+                                <span>Profit: <span id="monthly-profit">$0</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Financial Transactions</div>
+                        </div>
+                        <div id="transactions">
+                            <!-- Transaction history will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Investors Page -->
+                <div class="page-content" id="investors-page">
+                    <h1>Investors & Funding</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Available Investors</div>
+                        </div>
+                        <div id="investor-list">
+                            <!-- Investor list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Negotiations Page -->
+                <div class="page-content" id="negotiations-page">
+                    <h1>Business Negotiations</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Active Negotiations</div>
+                        </div>
+                        <div id="negotiation-list">
+                            <!-- Negotiations will be listed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conferences Page -->
+                <div class="page-content" id="conferences-page">
+                    <h1>Industry Conferences</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Upcoming Events</div>
+                        </div>
+                        <div id="conference-list">
+                            <!-- Conference list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Competitors Page -->
+                <div class="page-content" id="competitors-page">
+                    <h1>Competitor Analysis</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">AI Companies</div>
+                        </div>
+                        <div id="competitor-list">
+                            <!-- Competitor list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Rankings Page -->
+                <div class="page-content" id="rankings-page">
+                    <h1>Global AI Rankings</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Company Rankings</div>
+                        </div>
+                        <div id="ranking-list">
+                            <!-- Rankings will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Employees Page -->
+                <div class="page-content" id="employees-page">
+                    <h1>Employee Management</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Staff List</div>
+                        </div>
+                        <div id="employee-list">
+                            <!-- Employee list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Infrastructure Page -->
+                <div class="page-content" id="infrastructure-page">
+                    <h1>Infrastructure & Hardware</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Hardware Inventory</div>
+                        </div>
+                        <div id="hardware-list">
+                            <!-- Hardware list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Research Tree Page -->
+                <div class="page-content" id="research-page">
+                    <h1>Research & Technology Tree</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Technology Research</div>
+                        </div>
+                        <div id="tech-tree">
+                            <!-- Tech tree will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marketing Page -->
+                <div class="page-content" id="marketing-page">
+                    <h1>Marketing & PR</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Marketing Activities</div>
+                        </div>
+                        <div id="marketing-activities">
+                            <!-- Marketing activities will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Government Relations Page -->
+                <div class="page-content" id="government-page">
+                    <h1>Government & Regulations</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Regulatory Compliance</div>
+                        </div>
+                        <div id="regulation-list">
+                            <!-- Regulation list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News & Events Page -->
+                <div class="page-content" id="events-page">
+                    <h1>News & Random Events</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Recent Events</div>
+                        </div>
+                        <div id="event-list">
+                            <!-- Event list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Page -->
+                <div class="page-content" id="achievements-page">
+                    <h1>Achievements & Milestones</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Player Achievements</div>
+                        </div>
+                        <div id="achievement-list">
+                            <!-- Achievement list will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div class="page-content" id="settings-page">
+                    <h1>Company Settings</h1>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Company Profile</div>
+                        </div>
+                        <form id="company-settings-form">
+                            <div class="form-group">
+                                <label>Company Name</label>
+                                <input type="text" class="form-control" id="company-name-setting" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Founder Name</label>
+                                <input type="text" class="form-control" id="founder-name-setting" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Headquarters Location</label>
+                                <select class="form-control" id="headquarters-setting" required>
+                                    <option value="us">United States</option>
+                                    <option value="uk">United Kingdom</option>
+                                    <option value="germany">Germany</option>
+                                    <option value="poland">Poland</option>
+                                    <option value="france">France</option>
+                                    <option value="japan">Japan</option>
+                                    <option value="korea">South Korea</option>
+                                    <option value="china">China</option>
+                                    <option value="singapore">Singapore</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Specialization</label>
+                                <select class="form-control" id="specialization-setting" required>
+                                    <option value="general">General-purpose AI</option>
+                                    <option value="coding">Coding AI</option>
+                                    <option value="image">Image generation</option>
+                                    <option value="video">Video generation</option>
+                                    <option value="research">Scientific research</option>
+                                    <option value="robotics">Robotics</option>
+                                    <option value="multimodal">Multimodal AI</option>
+                                    <option value="language">Language models</option>
+                                    <option value="infrastructure">AI infrastructure</option>
+                                    <option value="agents">Autonomous agents</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Difficulty Level</label>
+                                <select class="form-control" id="difficulty-setting" required>
+                                    <option value="easy">Easy</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="hard">Hard</option>
+                                    <option value="nightmare">Nightmare</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn">Save Settings</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Save Manager</div>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn" id="save-game-btn">Save Game</button>
+                            <button class="btn btn-secondary" id="load-game-btn">Revert to Last Save</button>
+                            <button class="btn btn-secondary" id="export-save-btn">Export Save</button>
+                            <button class="btn btn-secondary" id="import-save-btn">Import Save</button>
+                            <button class="btn btn-danger" id="reset-progress-btn">Reset Progress</button>
+                            <input type="file" id="import-save-file" accept=".json,application/json" hidden>
+                        </div>
+                        <div id="save-slots"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notifications"></div>
+
+    <!-- Start / continue screen -->
+    <div id="start-screen" role="dialog" aria-modal="true" aria-labelledby="start-title">
+        <div>
+            <h1 id="start-title">AI EMPIRE</h1>
+            <p id="start-sub" class="hint"></p>
+            <button class="btn" id="start-btn" autofocus></button>
+        </div>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Modal Title</h3>
+                <button class="btn btn-secondary" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be inserted here -->
+            </div>
+            <div class="modal-footer" id="modal-footer">
+                <!-- Footer buttons will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State Management
+        // Save slots; slot 1 keeps the original key so old saves still load
+        const SAVE_SLOTS = ['1', '2', '3', '4', '5'];
+        let saveSlot = SAVE_SLOTS.includes(localStorage.getItem('aiEmpireSlot')) ? localStorage.getItem('aiEmpireSlot') : '1';
+        const saveKey = (slot = saveSlot) => slot === '1' ? 'aiEmpireSave' : `aiEmpireSave${slot}`;
+
+        class GameState {
+            constructor() {
+                this.gameStarted = false;
+                this.currentDate = new Date();
+                this.companyName = "AI EMPIRE";
+                this.founderName = "Player";
+                this.headquarters = "us";
+                this.specialization = "general";
+                this.difficulty = "normal";
+                this.money = 500000;
+                this.reputation = 0;
+                this.valuation = 500000;
+                this.models = [];
+                this.trainingProjects = [];
+                this.employees = [];
+                this.investors = [];
+                this.competitors = [];
+                this.infrastructure = [];
+                this.researchPoints = 0;
+                this.researchTree = [];
+                this.events = [];
+                this.achievements = [];
+                this.conferences = [];
+                this.benchmarks = [];
+                this.marketing = [];
+                this.regulations = [];
+                this.transactions = [];
+                this.bankrupt = false;
+            }
+
+            // Save game to localStorage
+            save(silent = false) {
+                try {
+                    localStorage.setItem(saveKey(), JSON.stringify(this));
+                    if (!silent) this.showNotification("Game saved successfully!", "success");
+                    renderSaveSlots();
+                } catch (error) {
+                    this.showNotification("Failed to save game.", "error");
+                }
+            }
+
+            // Load game from localStorage
+            load() {
+                try {
+                    const saveData = localStorage.getItem(saveKey());
+                    if (saveData) {
+                        const parsedData = JSON.parse(saveData);
+                        Object.assign(this, parsedData);
+                        this.gameStarted = true;
+                        return true;
+                    }
+                } catch (error) {
+                    console.error("Failed to load game:", error);
+                }
+                return false;
+            }
+
+            // Show notification
+            showNotification(message, type = "info") {
+                const notificationsContainer = document.getElementById('notifications');
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                
+                notificationsContainer.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+        }
+
+        // Initialize game state
+        const gameState = new GameState();
+
+        // DOM Elements
+        const pages = document.querySelectorAll('.page-content');
+        const navLinks = document.querySelectorAll('.sidebar-menu a');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
+        const sidebar = document.getElementById('sidebar');
+
+        // Navigation functionality
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = link.getAttribute('data-page') + '-page';
+                
+                pages.forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                document.getElementById(pageId).classList.add('active');
+                
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+
+        // Toggle sidebar
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            if (sidebar.classList.contains('collapsed')) {
+                toggleSidebarBtn.textContent = '▶';
+            } else {
+                toggleSidebarBtn.textContent = '◀';
+            }
+        });
+
+        // Company Creation Form
+        const companyCreationForm = document.getElementById('company-settings-form');
+        if (companyCreationForm) {
+            companyCreationForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                gameState.companyName = document.getElementById('company-name-setting').value;
+                gameState.founderName = document.getElementById('founder-name-setting').value;
+                gameState.headquarters = document.getElementById('headquarters-setting').value;
+                gameState.specialization = document.getElementById('specialization-setting').value;
+                gameState.difficulty = document.getElementById('difficulty-setting').value;
+                
+                // Set starting money based on difficulty
+                const difficultyMultipliers = {
+                    easy: 2,
+                    normal: 1,
+                    hard: 0.75,
+                    nightmare: 0.5
+                };
+                
+                const isNewCompany = !gameState.gameStarted;
+                if (isNewCompany) {
+                    gameState.money = Math.round(500000 * difficultyMultipliers[gameState.difficulty]);
+                    gameState.valuation = gameState.money;
+                    gameState.gameStarted = true;
+                }
+                gameState.save();
+                gameState.showNotification(isNewCompany ? "Company created successfully!" : "Settings updated.", "success");
+                updateUI();
+                
+                // Redirect to dashboard
+                document.querySelector('[data-page="dashboard"]').click();
+                if (isNewCompany) openTutorial(0);
+            });
+        }
+
+        // Save Game Button
+        const saveGameBtn = document.getElementById('save-game-btn');
+        if (saveGameBtn) {
+            saveGameBtn.addEventListener('click', () => {
+                gameState.save();
+            });
+        }
+
+        // Load Game Button
+        const loadGameBtn = document.getElementById('load-game-btn');
+        if (loadGameBtn) {
+            loadGameBtn.addEventListener('click', () => {
+                if (gameState.load()) {
+                    gameState.showNotification("Game loaded successfully!", "success");
+                    updateUI();
+                } else {
+                    gameState.showNotification("No save file found.", "error");
+                }
+            });
+        }
+
+        // Reset Progress Button
+        const resetProgressBtn = document.getElementById('reset-progress-btn');
+        if (resetProgressBtn) {
+            resetProgressBtn.addEventListener('click', () => {
+                if (confirm("Are you sure you want to reset your progress? This cannot be undone.")) {
+                    localStorage.removeItem(saveKey());
+                    window.location.reload();
+                }
+            });
+        }
+
+        // Export Save Button
+        document.getElementById('export-save-btn').addEventListener('click', () => downloadSave(JSON.stringify(gameState), 'save'));
+
+        // Import Save: replaces the current slot after validating the file
+        const importSaveFile = document.getElementById('import-save-file');
+        document.getElementById('import-save-btn').addEventListener('click', () => importSaveFile.click());
+        importSaveFile.addEventListener('change', async () => {
+            const file = importSaveFile.files[0];
+            importSaveFile.value = '';
+            if (!file) return;
+            let data;
+            try { data = JSON.parse(await file.text()); } catch { data = null; }
+            if (!data || typeof data !== 'object' || typeof data.companyName !== 'string' || !Number.isFinite(data.money) || !Array.isArray(data.models)) {
+                gameState.showNotification("That file isn't an AI Empire save.", "error");
+                return;
+            }
+            if (localStorage.getItem(saveKey()) && !confirm(`Overwrite save slot ${saveSlot}?`)) return;
+            localStorage.setItem(saveKey(), JSON.stringify(Object.assign(new GameState(), data, { gameStarted: true })));
+            window.location.reload();
+        });
+
+        // Save manager. Switching slots reloads so no state leaks between companies
+        const readSlot = slot => { try { return JSON.parse(localStorage.getItem(saveKey(slot))); } catch { return 'corrupt'; } };
+        const switchSlot = slot => {
+            if (gameState.gameStarted && !gameState.bankrupt) gameState.save(true);
+            localStorage.setItem('aiEmpireSlot', slot);
+            window.location.reload();
+        };
+        function downloadSave(json, name) {
+            const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+            const a = Object.assign(document.createElement('a'), { href: url, download: `ai-empire-${name}-${new Date().toISOString().slice(0, 10)}.json` });
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        const saveSlotsEl = document.getElementById('save-slots');
+        function renderSaveSlots() {
+            saveSlotsEl.innerHTML = SAVE_SLOTS.map(slot => {
+                const data = readSlot(slot);
+                const current = slot === saveSlot;
+                const btn = (action, label, cls = 'btn-secondary') => `<button class="btn btn-sm ${cls}" data-action="${action}" data-slot="${slot}">${label}</button>`;
+                const meta = data === 'corrupt' ? 'Unreadable save data'
+                    : data ? `<strong>${escapeHtml(data.companyName)}</strong><br>$${Math.round(data.money).toLocaleString()} · ${(data.models || []).length} models · ${new Date(data.currentDate).toLocaleDateString('en-US')}${data.bankrupt ? ' · <span class="negative">bankrupt</span>' : ''}`
+                    : current && gameState.gameStarted ? 'Not saved yet' : 'Empty';
+                const actions = [
+                    current ? (gameState.gameStarted ? btn('save', 'Save now', '') : '') : btn('play', data ? 'Play' : 'New game', ''),
+                    !current && gameState.gameStarted ? btn('copy', 'Copy current here') : '',
+                    data && data !== 'corrupt' ? btn('export', 'Export') : '',
+                    data ? btn('delete', 'Delete', 'btn-danger') : ''
+                ].join('');
+                return `<div class="save-slot${current ? ' current' : ''}">
+                    <div class="save-slot-title">Slot ${slot}${current ? '<span class="badge">Current</span>' : ''}</div>
+                    <div class="save-slot-meta">${meta}</div>
+                    <div class="save-slot-actions">${actions}</div>
+                </div>`;
+            }).join('');
+        }
+        saveSlotsEl.addEventListener('click', e => {
+            const { action, slot } = e.target.dataset;
+            if (!action) return;
+            const data = readSlot(slot);
+            if (action === 'play') switchSlot(slot);
+            if (action === 'save') gameState.save();
+            if (action === 'export') downloadSave(JSON.stringify(data), `slot${slot}`);
+            if (action === 'copy' && (!data || confirm(`Overwrite slot ${slot} (${data.companyName || 'unreadable'})?`))) {
+                localStorage.setItem(saveKey(slot), JSON.stringify(gameState));
+                gameState.showNotification(`Copied to slot ${slot}.`, "success");
+                renderSaveSlots();
+            }
+            if (action === 'delete' && confirm(`Delete slot ${slot}${data && data.companyName ? ` (${data.companyName})` : ''}? This cannot be undone.`)) {
+                localStorage.removeItem(saveKey(slot));
+                if (slot === saveSlot) window.location.reload();
+                else renderSaveSlots();
+            }
+        });
+
+        // Update Dashboard
+        function updateDashboard() {
+            if (!gameState.gameStarted) return;
+            
+            document.getElementById('company-name').textContent = gameState.companyName;
+            document.getElementById('player-name').textContent = gameState.founderName;
+            document.getElementById('company-logo').textContent = gameState.companyName.substring(0, 2).toUpperCase();
+            document.getElementById('balance').textContent = `$${gameState.money.toLocaleString()}`;
+            document.getElementById('research-points').textContent = gameState.researchPoints;
+            document.getElementById('active-projects').textContent = gameState.trainingProjects.length;
+            document.getElementById('total-models').textContent = gameState.models.length;
+            document.getElementById('company-reputation').textContent = gameState.reputation;
+            document.getElementById('employee-count').textContent = gameState.employees.length;
+            document.getElementById('market-share').textContent = `${marketShare().toFixed(1)}%`;
+            document.getElementById('company-ranking').textContent = `#${rankings().findIndex(r => r.you) + 1}`;
+            document.getElementById('company-valuation').textContent = `$${gameState.valuation.toLocaleString()}`;
+            document.getElementById('released-models').textContent = gameState.models.filter(m => m.released).length;
+            
+            // Financial overview
+            const income = dailyIncome();
+            const expenses = dailyExpenses();
+            document.getElementById('daily-income').textContent = `$${income.toLocaleString()}`;
+            document.getElementById('daily-expenses').textContent = `$${expenses.toLocaleString()}`;
+            document.getElementById('cash-flow').textContent = `$${(income - expenses).toLocaleString()}`;
+            document.getElementById('income').textContent = `$${income.toLocaleString()}`;
+            document.getElementById('expenses').textContent = `$${expenses.toLocaleString()}`;
+            document.getElementById('total-investments').textContent = `$${gameState.money.toLocaleString()}`;
+            document.getElementById('debt').textContent = `$${totalDebt().toLocaleString()}`;
+            document.getElementById('taxes').textContent = `$${(dailyTax() * 30).toLocaleString()}/mo`;
+            document.getElementById('company-val').textContent = `$${gameState.valuation.toLocaleString()}`;
+            document.getElementById('monthly-revenue').textContent = `$${(income * 30).toLocaleString()}`;
+            document.getElementById('monthly-profit').textContent = `$${((income - expenses) * 30).toLocaleString()}`;
+            document.getElementById('transactions').innerHTML = gameState.transactions.slice(-10).reverse().map(t =>
+                `<div class="model-stats"><span>${escapeHtml(t.date)} · ${escapeHtml(t.desc)}</span><span class="${t.amount < 0 ? 'negative' : 'positive'}">${t.amount < 0 ? '-' : '+'}$${Math.abs(t.amount).toLocaleString()}</span></div>`).join('');
+        }
+
+        // Initialize the game
+        function initGame() {
+            const hasSave = gameState.load(), start = document.getElementById('start-screen');
+            start.classList.toggle('new', !hasSave);
+            document.getElementById('start-sub').textContent = hasSave ? `${gameState.companyName} · paused` : 'Build the world\'s leading AI company.';
+            document.getElementById('start-btn').textContent = hasSave ? 'Continue Game' : 'New Game';
+            setSpeed(0);
+            document.getElementById('start-btn').onclick = () => { start.hidden = true; setSpeed(1); };
+            if (hasSave) {
+                updateUI();
+                if (gameState.pendingCrisis != null) openCrisis(gameState.pendingCrisis);
+            } else {
+                // Show company creation screen if no save exists
+                document.querySelector('[data-page="settings"]').click();
+            }
+            
+            // Update time display
+            // Game clock: one in-game day per tick
+            const updateClock = () => {
+                document.getElementById('current-time').textContent = new Date(gameState.currentDate).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
+            updateClock();
+            let elapsed = 0;  // speed 0 = paused; ticks are counted in 250 ms steps
+            setInterval(() => { if (gameState.pendingCrisis != null) return; elapsed += 250 * gameSpeed; if (elapsed >= DAY_MS) { elapsed = 0; tick(); updateClock(); } }, 250);
+        }
+
+        // Dropdown functionality
+        function initDropdowns() {
+            const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
+            
+            dropdownTriggers.forEach(trigger => {
+                const label = trigger.querySelector('span:first-child');
+                label.dataset.placeholder = label.textContent;
+                const optionsContainer = trigger.nextElementSibling;
+                const hiddenInput = trigger.closest('.form-group').querySelector('input[type="hidden"]');
+                
+                // Open dropdown
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Close all other dropdowns
+                    document.querySelectorAll('.dropdown-options').forEach(otherOptions => {
+                        if (otherOptions !== optionsContainer) {
+                            otherOptions.style.display = 'none';
+                        }
+                    });
+                    
+                    // Toggle this dropdown
+                    const isVisible = optionsContainer.style.display === 'block';
+                    optionsContainer.style.display = isVisible ? 'none' : 'block';
+                });
+                
+                // Select option
+                const options = optionsContainer.querySelectorAll('.dropdown-option');
+                options.forEach(option => {
+                    option.addEventListener('click', () => {
+                        const value = option.getAttribute('data-value');
+                        const text = option.textContent;
+                        
+                        trigger.querySelector('span:first-child').textContent = text;
+                        hiddenInput.value = value;
+                        
+                        // Update selected class
+                        options.forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        
+                        // Close dropdown
+                        optionsContainer.style.display = 'none';
+                    });
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.dropdown-container')) {
+                    document.querySelectorAll('.dropdown-options').forEach(options => {
+                        options.style.display = 'none';
+                    });
+                }
+            });
+        }
+
+        // Set a custom dropdown without clicking it (no sounds, no popup)
+        function setDropdown(id, value) {
+            const input = document.getElementById(id), group = input.closest('.form-group');
+            const opt = value && [...group.querySelectorAll('.dropdown-option')].find(o => o.dataset.value === value);
+            group.querySelectorAll('.dropdown-option').forEach(o => o.classList.toggle('selected', o === opt));
+            input.value = opt ? value : '';
+            const label = group.querySelector('.dropdown-trigger span:first-child');
+            label.textContent = opt ? opt.textContent : label.dataset.placeholder;
+        }
+        let nextOf = null;  // id of the model the form is training a successor for
+
+        // Model Creation Form Handler
+        const modelCreationForm = document.getElementById('model-creation-form');
+        if (modelCreationForm) {
+            modelCreationForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                // Get form values
+                const name = document.getElementById('model-name').value;
+                const version = document.getElementById('model-version').value;
+                const family = document.getElementById('model-family').value;
+                const architecture = document.getElementById('model-architecture').value;
+                const size = document.getElementById('model-size').value;
+                const precision = document.getElementById('model-precision').value;
+                const context = document.getElementById('model-context').value;
+                const safety = document.getElementById('model-safety').value;
+                const dataQuality = document.getElementById('data-quality').value;
+                const duration = document.getElementById('training-duration').value;
+                const objectives = document.getElementById('training-objectives').value;
+                
+                // Validate required fields
+                if (!name || !version || !family || !architecture || !size || !precision || !context || !safety || !dataQuality || !duration || !objectives) {
+                    gameState.showNotification("Please fill in all required fields.", "error");
+                    return;
+                }
+                
+                // Create model object
+                const model = {
+                    id: Date.now(),
+                    name: name,
+                    version: version,
+                    family: family,
+                    architecture: architecture,
+                    size: size,
+                    precision: precision,
+                    context, safety,
+                    dataQuality: dataQuality,
+                    duration: duration,
+                    objectives: objectives ? objectives.split(',') : [],
+                    status: 'training',
+                    progress: 0,
+                    createdAt: new Date(gameState.currentDate),
+                    released: false
+                };
+
+                const prev = nextOf && byId(gameState.models, nextOf);
+                if (prev) {
+                    if (prev.name !== name || hasSuccessor(prev)) return gameState.showNotification(`${prev.name} already has a newer version.`, "error");
+                    model.generation = (prev.generation || 1) + 1;
+                }
+                if (!startTraining(model)) return;
+                nextOf = null;
+                document.getElementById('model-name').readOnly = false;
+                
+                // Reset form
+                modelCreationForm.reset();
+                
+                // Clear dropdown selections (hidden inputs are not cleared by form.reset())
+                modelCreationForm.querySelectorAll('.dropdown-option.selected').forEach(option => option.classList.remove('selected'));
+                modelCreationForm.querySelectorAll('input[type="hidden"]').forEach(input => input.value = '');
+                modelCreationForm.querySelectorAll('.dropdown-trigger span:first-child').forEach(label => label.textContent = label.dataset.placeholder);
+                updateUI();
+                
+                // Redirect to dashboard
+                document.querySelector('[data-page="dashboard"]').click();
+            });
+        }
+
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+
+        // Economy
+        const DAY_MS = 2000;
+        const SIZE_B = { '1b': 1, '3b': 3, '7b': 7, '14b': 14, '30b': 30, '70b': 70, '120b': 120, '200b': 200, '300b': 300, '400b': 400, '600b': 600, '1t': 1000, '1.5t': 1500, '2t': 2000 };
+        const QUALITY = { basic: 0.6, standard: 0.8, high: 1, premium: 1.2, specialized: 1.3 };
+        const TRAIN_DAYS = { quick: 10, standard: 20, extended: 40, experimental: 60 };
+        const PARAMS = {
+            architecture: { transformer: [1, 0], dense: [1.2, 3], moe: [0.8, 2], custom: [1.1, 0] },
+            precision: { fp32: [1.5, 2], fp16: [1, 0], bf16: [1, 1], int8: [0.7, -3], int4: [0.5, -6] },
+            context: { '8k': [1, 0, 1], '32k': [1.1, 1, 1.05], '128k': [1.25, 2, 1.1], '1m': [1.6, 3, 1.2] },
+            safety: { none: [0.9, 1, 0.9], standard: [1, 0, 1], strict: [1.15, -2, 1.1] },
+        };
+        const paramFx = (m, i) => Object.entries(PARAMS).map(([k, t]) => (t[m[k]] || [])[i] ?? (i === 1 ? 0 : 1));
+        const DIFFICULTY = { easy: 1.3, normal: 1, hard: 0.7 };
+        const trainingCost = m => Math.round(20000 * SIZE_B[m.size] ** 0.6 * QUALITY[m.dataQuality] * TRAIN_DAYS[m.duration] / 10 * paramFx(m, 0).reduce((a, b) => a * b) * costMult());
+        // diminishing returns: raw build quality flattens toward ~75; research, staff and generations push past it
+        const modelScore = m => Math.round(Math.max(1, Math.min(100, 100 * (1 - Math.exp(-(20 + 12 * Math.log2(1 + SIZE_B[m.size]) * QUALITY[m.dataQuality] * (TRAIN_DAYS[m.duration] / 20) ** 0.3 + paramFx(m, 1).reduce((a, b) => a + b)) / 200))
+            + scoreBonus(m) + (m.architecture === 'custom' ? Math.random() * 16 - 7 : 0) + Math.random() * 6 - 3)));
+        // Revenue grows with score cubed and halves every year a model is live
+        const modelIncome = m => Math.round(m.score ** 3 / 8 * (m.demand ?? 1) * (gameState.market ?? 1) * rivalFactor(m) * (DIFFICULTY[gameState.difficulty] || 1) * incomeMult(m) * 0.5 ** ((m.daysLive || 0) * (m.price === 'premium' ? 2 : 1) / 365 + newerReleased(m)));
+        // each newer released version of the same family halves an older model's income
+        const newerReleased = m => gameState.models.filter(x => x.released && x.name === m.name && (x.generation || 1) > (m.generation || 1)).length;
+        // daily demand: a noisy random walk pulled back toward 1, with rare viral spikes and slumps
+        const nextDemand = (d, r = Math.random) => Math.min(2.5, Math.max(0.3, 1 + (d - 1) * 0.85 + (r() - 0.5) * 0.3 + (r() < 0.02 ? 0.8 : r() < 0.02 ? -0.4 : 0)));
+        // customers drift to whichever lab has the better model: up to +20% if you lead the best rival, down to -30% if you trail
+        const rivalFactor = m => Math.min(1.2, Math.max(0.7, 1 + (m.score - Math.max(0, ...gameState.competitors.map(c => c.bestScore || 0))) / 200));
+        const marketLabel = () => (gameState.market ?? 1) > 1.15 ? '📈 Boom' : (gameState.market ?? 1) < 0.85 ? '📉 Bust' : '📊 Stable';
+        const INCIDENT_ODDS = { none: 1 / 120, standard: 1 / 600 };  // strict-tuned models never cause incidents
+        const dailyIncome = () => gameState.models.filter(m => m.released).reduce((sum, m) => sum + modelIncome(m), 0) + extraIncome();
+        const preTaxExpenses = () => 3000 + 500 * (hasTech('inference') ? 0.5 : 1) * gameState.models.filter(m => m.released).length + extraExpenses();
+        const dailyTax = () => Math.round(Math.max(0, dailyIncome() - preTaxExpenses()) * 0.2);
+        const dailyExpenses = () => Math.round(preTaxExpenses() + dailyTax());
+        const gameDate = () => new Date(gameState.currentDate).toLocaleDateString('en-US');
+        const logTransaction = (desc, amount) => gameState.transactions.push({ date: gameDate(), desc, amount });
+
+        // Procedural world: names are combined from parts, stats are randomised and saved with the game
+        const pick = list => list[Math.floor(Math.random() * list.length)];
+        const randInt = (min, max) => Math.floor(min + Math.random() * (max - min + 1));
+        const newId = () => Math.random().toString(36).slice(2, 10);
+        const uniqueName = (make, taken) => {
+            for (let i = 0; i < 20; i++) { const name = make(); if (!taken.includes(name)) return name; }
+            return `${make()} ${randInt(2, 99)}`;
+        };
+        const HQS = ['us', 'uk', 'germany', 'france', 'china', 'japan', 'canada', 'india', 'korea', 'israel'];
+        const SPECIALIZATIONS = ['general', 'coding', 'reasoning', 'multimodal', 'image', 'video', 'speech', 'scientific', 'agent'];
+        const FIRST_NAMES = ['Ada', 'Alan', 'Grace', 'Linus', 'Mira', 'Kenji', 'Priya', 'Omar', 'Lena', 'Diego', 'Sofia', 'Wei', 'Noah', 'Amara', 'Ivan', 'Yuki'];
+        const LAST_NAMES = ['Smith', 'Chen', 'Kowalski', 'Okafor', 'Garcia', 'Novak', 'Tanaka', 'Patel', 'Müller', 'Silva', 'Haddad', 'Kim', 'Johansson', 'Rossi'];
+
+        function genCompetitor(taken = gameState.competitors.map(c => c.name)) {
+            return {
+                id: newId(),
+                name: uniqueName(() => `${pick(['Nova', 'Titan', 'Quantum', 'Deep', 'Neural', 'Hyper', 'Cortex', 'Vector', 'Synth', 'Apex', 'Lumen', 'Echo', 'Atlas', 'Orbit', 'Sigma'])} ${pick(['Mind', 'AI', 'Labs', 'Intelligence', 'Research', 'Systems', 'Dynamics', 'Logic', 'Cognition'])}`, taken),
+                headquarters: pick(HQS),
+                specialization: pick(SPECIALIZATIONS),
+                valuation: Math.round(10 ** (6.5 + Math.random() * 3)),  // $3M to $3B
+                reputation: randInt(20, 90),
+                bestScore: randInt(30, 75),
+                modelsReleased: randInt(0, 12)
+            };
+        }
+
+        function genInvestor(taken = gameState.investors.map(i => i.name)) {
+            const capital = Math.round(10 ** (6 + Math.random() * 1.7) / 1e5) * 1e5;  // $1M to $50M
+            return {
+                id: newId(),
+                name: uniqueName(() => `${pick(['Silver', 'Blue', 'Granite', 'Summit', 'Harbor', 'North', 'Iron', 'Redwood', 'Crescent', 'Pioneer', 'Falcon', 'Meridian'])} ${pick(['Ventures', 'Capital', 'Partners', 'Fund', 'Holdings', 'Equity'])}`, taken),
+                company: pick(['Venture Capital', 'Angel Investor', 'Government Fund', 'Corporate VC', 'Sovereign Fund']),
+                capital,
+                minReputation: Math.max(0, Math.round(Math.log10(capital / 1e6) * 30)),  // bigger funds want a known name
+                riskTolerance: randInt(20, 95)
+            };
+        }
+
+        const genEmployee = () => ({
+            id: newId(),
+            name: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
+            position: pick(['AI Researcher', 'ML Engineer', 'Data Engineer', 'Infra Engineer']),
+            salary: randInt(60, 160) * 1000,
+            skillLevel: randInt(50, 95),
+            experience: randInt(1, 15)
+        });
+
+        function seedWorld() {
+            gameState.competitors = [];
+            for (let i = 0; i < 6; i++) gameState.competitors.push(genCompetitor());
+            gameState.investors = [];
+            for (let i = 0; i < 3; i++) gameState.investors.push(genInvestor());
+            gameState.investors[0].minReputation = 0;  // always one investor you can take on day one
+            gameState.employees = [genEmployee(), genEmployee()];
+            gameState.infrastructure = [{ id: newId(), type: "GPU Server", name: "Compute Node Alpha", capacity: 200, memory: 128, powerConsumption: 1000, cost: 50000 }];
+        }
+
+        // Competitors drift, release models, and new players and investors appear
+        function tickWorld() {
+            gameState.competitors.forEach(c => {
+                c.valuation = Math.max(1e5, Math.round(c.valuation * (1 + (Math.random() - 0.48) * 0.02)));
+                if (Math.random() < 1 / 90) {
+                    c.bestScore = Math.min(100, (c.bestScore || 50) + randInt(-2, 6));
+                    c.modelsReleased = (c.modelsReleased || 0) + 1;
+                    c.valuation = Math.round(c.valuation * 1.08);
+                    gameState.showNotification(`${c.name} released a new model (score ${c.bestScore}).`, "info");
+                }
+            });
+            if (Math.random() < 1 / 120 && gameState.competitors.length < 12) {
+                const c = genCompetitor();
+                gameState.competitors.push(c);
+                gameState.showNotification(`New competitor: ${c.name} entered the market.`, "info");
+            }
+            if (Math.random() < 1 / 45 && gameState.investors.length < 6) {
+                const inv = genInvestor();
+                gameState.investors.push(inv);
+                gameState.showNotification(`${inv.name} is interested in investing.`, "info");
+            }
+        }
+
+        // Competitor revenue is backed out of valuation the same way the player's valuation is built
+        const competitorIncome = c => c.valuation / (365 * 3);
+        function rankings() {
+            const you = { name: gameState.companyName, valuation: gameState.valuation, you: true };
+            return [you, ...gameState.competitors].sort((a, b) => b.valuation - a.valuation);
+        }
+        const marketShare = () => {
+            const total = dailyIncome() + gameState.competitors.reduce((sum, c) => sum + competitorIncome(c), 0);
+            return total ? dailyIncome() / total * 100 : 0;
+        };
+
+        function tick() {
+            if (!gameState.gameStarted || gameState.bankrupt) return;
+            const date = new Date(gameState.currentDate);
+            date.setDate(date.getDate() + 1);
+            gameState.currentDate = date.toISOString();
+
+            gameState.trainingProjects = gameState.trainingProjects.filter(p => {
+                p.progress = Math.min(100, Math.round(p.progress + 100 / p.days * trainSpeed()));
+                if (p.progress < 100) return true;
+                const model = gameState.models.find(m => m.id === p.modelId);
+                if (model) {
+                    model.status = 'trained';
+                    model.score = modelScore(model);
+                    gameState.researchPoints += Math.round(model.score / 10);
+                    gameState.showNotification(`${model.name} finished training (score ${model.score}). Release it from the Models page.`, "success");
+                }
+                return false;
+            });
+
+            tickWorld();
+            gameState.money += dailyIncome() - dailyExpenses();
+            gameState.models.forEach(m => { if (m.released) { m.daysLive = (m.daysLive || 0) + 1; m.demand = nextDemand(m.demand ?? 1); } });
+            tickExtras(date);
+            gameState.valuation = Math.max(0, Math.round(gameState.money + dailyIncome() * 365 * 3));
+            if (gameState.money < 0) {
+                gameState.bankrupt = true;
+                gameState.showNotification("You're bankrupt! Reset progress in Settings to start over.", "error");
+            }
+            if (date.getDate() === 1 || gameState.bankrupt) gameState.save(true);
+            updateUI();
+        }
+
+        // Families the player collapsed (click a family heading to toggle)
+        const collapsedFams = new Set();
+        document.getElementById('model-list').addEventListener('click', e => {
+            const head = e.target.closest('tr.fam');
+            if (!head || e.target.closest('button')) return;
+            collapsedFams.has(head.dataset.fam) ? collapsedFams.delete(head.dataset.fam) : collapsedFams.add(head.dataset.fam);
+            renderModelList();
+        });
+
+        // Render model list
+        function renderModelList() {
+            const modelListContainer = document.getElementById('model-list');
+            if (!modelListContainer) return;
+            
+            modelListContainer.innerHTML = '';
+            
+            const families = Map.groupBy(gameState.models, m => m.name);
+            families.forEach((models, name) => {
+                const head = document.createElement('tr');
+                head.className = 'fam' + (collapsedFams.has(name) ? ' closed' : '');
+                head.dataset.fam = name;
+                const live = models.filter(m => m.released).length;
+                head.innerHTML = `<th colspan="5">${escapeHtml(name)} <span>${models.length} version${models.length > 1 ? 's' : ''}${live ? ` · ${live} live` : ''}</span>${live ? btn('retirefamily', name, 'Retire family', 'btn-danger') : ''}</th>`;
+                modelListContainer.appendChild(head);
+                // newest version first
+                [...models].sort((a, b) => (b.generation || 1) - (a.generation || 1)).forEach(model => {
+                const modelCard = document.createElement('tr');
+                modelCard.hidden = collapsedFams.has(name);
+                modelCard.innerHTML = `
+                    <td><div class="model-name">v${escapeHtml(model.version)}</div><div class="model-version">${escapeHtml(model.family)} · ${escapeHtml(model.size)}</div></td>
+                    <td><span class="status st-${escapeHtml(model.status)}">${escapeHtml(model.status)}</span></td>
+                    <td class="num">${model.score || '<span class="muted">—</span>'}</td>
+                    <td class="num">${model.released ? `$${modelIncome(model).toLocaleString()}<small>/day</small><div class="model-version">${revenuePct(model)}% of launch</div>` : '<span class="muted">—</span>'}</td>
+                    <td class="td-actions">${model.status === 'trained' && !model.released ? `<button class="btn btn-sm release-btn" data-id="${model.id}">Release</button>` : ''}${modelActions(model)}</td>
+                `;
+                modelListContainer.appendChild(modelCard);
+                });
+            });
+        }
+
+        // Render training projects
+        function renderTrainingProjects() {
+            const trainingProjectsContainer = document.getElementById('training-projects');
+            if (!trainingProjectsContainer) return;
+            
+            trainingProjectsContainer.innerHTML = '';
+            
+            gameState.trainingProjects.forEach(project => {
+                const projectDiv = document.createElement('div');
+                projectDiv.className = 'card';
+                projectDiv.style.marginBottom = '10px';
+                projectDiv.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title">${escapeHtml(project.modelName)}</div>
+                    </div>
+                    <div class="model-stats">
+                        <span>Progress: ${project.progress}%</span>
+                        <span>Cost: $${project.cost.toLocaleString()}</span>
+                    </div>
+                `;
+                trainingProjectsContainer.appendChild(projectDiv);
+            });
+        }
+
+        // Render investor list
+        function renderInvestorList() {
+            const investorListContainer = document.getElementById('investor-list');
+            if (!investorListContainer) return;
+            
+            investorListContainer.innerHTML = '';
+            
+            gameState.investors.forEach(investor => {
+                const investorDiv = document.createElement('div');
+                investorDiv.className = 'card';
+                investorDiv.style.marginBottom = '10px';
+                investorDiv.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title">${escapeHtml(investor.name)}</div>
+                    </div>
+                    <div class="model-stats">
+                        <span>Company: ${escapeHtml(investor.company)}</span>
+                        <span>Capital: $${investor.capital.toLocaleString()}</span>
+                    </div>
+                    ${gameState.reputation >= (investor.minReputation || 0)
+                        ? `<button class="btn invest-btn" data-id="${investor.id}">Accept $${investorOffer(investor).toLocaleString()}</button>`
+                        : `<span>Needs reputation ${investor.minReputation} (you have ${gameState.reputation})</span>`}
+                `;
+                investorListContainer.appendChild(investorDiv);
+            });
+        }
+
+        // Investors put in more as your reputation grows; each invests once
+        const investorOffer = inv => Math.round(inv.capital * Math.min(0.5, 0.1 + gameState.reputation / 500));
+
+        document.getElementById('model-list').addEventListener('click', e => {
+            const model = gameState.models.find(m => String(m.id) === e.target.dataset.id);
+            if (!e.target.classList.contains('release-btn') || !model) return;
+            model.released = true;
+            model.status = 'released';
+            model.daysLive = 0;
+            gameState.reputation += Math.round(model.score / 5 * (hasTech('safety') ? 1.5 : 1));
+            gameState.showNotification(`${model.name} released! Earning $${modelIncome(model).toLocaleString()}/day.`, "success");
+            gameState.save(true);
+            updateUI();
+        });
+
+        document.getElementById('investor-list').addEventListener('click', e => {
+            const investor = gameState.investors.find(i => String(i.id) === e.target.dataset.id);
+            if (!e.target.classList.contains('invest-btn') || !investor || gameState.reputation < (investor.minReputation || 0)) return;
+            const offer = investorOffer(investor);
+            gameState.money += offer;
+            gameState.bankrupt = gameState.money < 0;
+            gameState.investors = gameState.investors.filter(i => i !== investor);
+            logTransaction(`Investment from ${investor.name}`, offer);
+            gameState.showNotification(`${investor.name} invested $${offer.toLocaleString()}.`, "success");
+            gameState.save(true);
+            updateUI();
+        });
+
+        function renderCompetitors() {
+            document.getElementById('competitor-list').innerHTML = gameState.competitors.map(c => `
+                <div class="card" style="margin-bottom: 10px">
+                    <div class="card-header"><div class="card-title">${escapeHtml(c.name)}</div></div>
+                    <div class="model-stats">
+                        <span>HQ: ${escapeHtml(c.headquarters)} · ${escapeHtml(c.specialization)}</span>
+                        <span>Valuation: $${c.valuation.toLocaleString()}</span>
+                        <span>Best model score: ${c.bestScore ?? '-'}</span>
+                        <span>Models released: ${c.modelsReleased ?? '-'}</span>
+                    </div>
+                </div>`).join('');
+            document.getElementById('ranking-list').innerHTML = rankings().map((r, i) => `
+                <div class="model-stats"${r.you ? ' style="font-weight: bold"' : ''}>
+                    <span>#${i + 1} ${escapeHtml(r.name)}${r.you ? ' (you)' : ''}</span>
+                    <span>$${r.valuation.toLocaleString()}</span>
+                </div>`).join('');
+        }
+
+        // Update all UI elements
+        function updateUI() {
+            renderCompetitors();
+            updateDashboard();
+            renderModelList();
+            renderTrainingProjects();
+            renderInvestorList();
+            renderExtras();
+        }
+
+        // ===== Expansion: speed, staff, hardware, research, marketing, benchmarks, deals, government, events, achievements =====
+        let gameSpeed = 1;  // 0 = paused
+        let EVENT_CHANCE = 1 / 30;  // per day; tests set it to 0
+        let compareSort = 'score';
+        const notify = (msg, type = 'info') => gameState.showNotification(msg, type);
+        const usd = n => `$${Math.round(n).toLocaleString()}`;
+        const byId = (list, id) => list.find(x => String(x.id) === String(id));
+        const EXTRA_DEFAULTS = { hype: 0, loans: [], candidates: [], campaigns: [], deals: [], subsidiaries: [], history: [], day: 0, grantCooldown: 0, gpuShortage: 0 };
+        function ensureExtras() {  // older saves lack the new fields
+            for (const [k, v] of Object.entries(EXTRA_DEFAULTS)) if (gameState[k] === undefined) gameState[k] = JSON.parse(JSON.stringify(v));
+        }
+        function pay(amount, desc) {
+            if (gameState.money < amount) { notify(`Not enough cash: ${desc} costs ${usd(amount)}.`, 'error'); return false; }
+            gameState.money -= amount;
+            logTransaction(desc, -amount);
+            return true;
+        }
+        const spend = (amount, desc) => { gameState.money -= amount; logTransaction(desc, -amount); };
+        const earn = (amount, desc) => { gameState.money += amount; logTransaction(desc, amount); };
+
+        // Research tree
+        const TECHS = [
+            { id: 'attention', name: 'Efficient Attention', cost: 30, desc: 'Training costs 15% less' },
+            { id: 'curation', name: 'Data Curation', cost: 40, desc: '+3 model score' },
+            { id: 'distill', name: 'Distillation', cost: 50, desc: 'Training runs 25% faster' },
+            { id: 'inference', name: 'Inference Optimization', cost: 50, desc: 'Hosting costs halved' },
+            { id: 'rlhf', name: 'RLHF', cost: 60, req: ['curation'], desc: '+4 model score' },
+            { id: 'safety', name: 'Safety Alignment', cost: 60, desc: 'Releases give 50% more reputation; +10 on the Safety benchmark' },
+            { id: 'longctx', name: 'Long Context', cost: 70, desc: '+10% income from all models' },
+            { id: 'moe', name: 'Sparse MoE', cost: 80, req: ['attention'], desc: '+5 score for MoE models' },
+            { id: 'multimodal', name: 'Multimodal Fusion', cost: 90, req: ['longctx'], desc: '+25% income for multimodal, image and video models' },
+            { id: 'agents', name: 'Agent Frameworks', cost: 90, req: ['rlhf'], desc: '+25% income for agent and coding models' },
+            { id: 'synthetic', name: 'Synthetic Data', cost: 100, req: ['curation'], desc: 'Training costs 20% less' },
+            { id: 'scaling', name: 'Scaling Laws', cost: 150, req: ['rlhf', 'distill'], desc: '+6 model score' },
+        ];
+        const hasTech = id => gameState.researchTree.includes(id);
+        const techUnlocked = t => (t.req || []).every(hasTech);
+
+        // Effects of staff, research, hardware, hype and deals on the core economy
+        const countRole = role => gameState.employees.filter(e => e.position === role).length;
+        const costMult = () => (hasTech('attention') ? 0.85 : 1) * (hasTech('synthetic') ? 0.8 : 1) * (1 - Math.min(0.3, 0.05 * countRole('Infra Engineer')));
+        const scoreBonus = m => (hasTech('curation') ? 3 : 0) + (hasTech('rlhf') ? 4 : 0) + (hasTech('scaling') ? 6 : 0)
+            + (hasTech('moe') && m.architecture === 'moe' ? 5 : 0) + Math.min(5, countRole('Data Engineer')) + Math.min(10, 2 * ((m.generation || 1) - 1));
+        const HW = { 'GPU Server': { cost: 50000, capacity: 200, upkeep: 150 }, 'GPU Cluster': { cost: 400000, capacity: 2000, upkeep: 1000 }, 'Supercomputer': { cost: 3000000, capacity: 20000, upkeep: 6000 } };
+        const totalCompute = () => gameState.infrastructure.reduce((s, h) => s + (h.capacity || 0), 0);
+        const trainingSlots = () => Math.max(1, gameState.infrastructure.length);
+        const trainSpeed = () => (1 + 0.1 * countRole('ML Engineer')) * (1 + 0.5 * Math.log10(Math.max(200, totalCompute()) / 200))
+            * (hasTech('distill') ? 1.25 : 1) * ((gameState.gpuShortage || 0) > 0 ? 0.5 : 1);
+        const PRICING = { budget: 0.75, standard: 1, premium: 1.3 };
+        const incomeMult = m => paramFx(m, 2).reduce((a, b) => a * b) * (1 + (gameState.hype || 0) / 100) * (hasTech('longctx') ? 1.1 : 1) * (PRICING[m.price] || 1)
+            * (hasTech('multimodal') && ['multimodal', 'image', 'video'].includes(m.family) ? 1.25 : 1)
+            * (hasTech('agents') && ['agent', 'coding'].includes(m.family) ? 1.25 : 1);
+        const extraIncome = () => (gameState.subsidiaries || []).reduce((s, x) => s + x.income, 0) + (gameState.deals || []).filter(d => d.active).reduce((s, d) => s + d.perDay, 0);
+        const totalDebt = () => (gameState.loans || []).reduce((s, l) => s + l.amount, 0);
+        const debtLimit = () => Math.max(1000000, Math.round(gameState.valuation * 0.5));
+        const payroll = () => gameState.employees.reduce((s, e) => s + e.salary, 0) / 365;
+        const extraExpenses = () => Math.round(payroll()
+            + gameState.infrastructure.reduce((s, h) => s + (HW[h.type]?.upkeep ?? 150), 0)
+            + (gameState.loans || []).reduce((s, l) => s + l.amount * l.rate, 0)
+            + gameState.regulations.filter(r => r.status === 'passed').reduce((s, r) => s + (r.cost || 0), 0));
+
+        function startTraining(model) {
+            if (gameState.trainingProjects.length >= trainingSlots()) {
+                notify(`All ${trainingSlots()} compute slots are busy. Buy hardware on the Infrastructure page.`, 'error');
+                return false;
+            }
+            const cost = trainingCost(model);
+            if (cost > gameState.money) {
+                notify(`Training costs ${usd(cost)}; you only have ${usd(gameState.money)}.`, 'error');
+                return false;
+            }
+            spend(cost, `Training ${model.name}`);
+            gameState.trainingProjects.push({ modelId: model.id, modelName: model.name, progress: 0, cost, days: TRAIN_DAYS[model.duration] });
+            gameState.models.push(model);
+            gameState.save();
+            notify(`Training ${model.name} started: ${usd(cost)}, ${TRAIN_DAYS[model.duration]} days.`, 'success');
+            return true;
+        }
+
+        const CAMPAIGNS = [
+            { id: 'social', name: 'Social media push', cost: 20000, days: 7, hype: 5, rep: 1 },
+            { id: 'blog', name: 'Technical blog series', cost: 40000, days: 14, hype: 6, rep: 3 },
+            { id: 'booth', name: 'Developer conference booth', cost: 120000, days: 10, hype: 12, rep: 4 },
+            { id: 'tv', name: 'TV ad campaign', cost: 500000, days: 30, hype: 25, rep: 2 },
+            { id: 'celebrity', name: 'Celebrity endorsement', cost: 1500000, days: 30, hype: 45, rep: 5 },
+        ];
+        const SUITES = { Reasoning: ['reasoning', 'general'], Coding: ['coding', 'agent'], Math: ['scientific', 'reasoning'], Safety: [], Multilingual: ['general', 'speech'] };
+        const BENCH_COST = 5000;
+        const LOANS = [{ amount: 500000, rate: 0.0003 }, { amount: 2000000, rate: 0.0004 }];
+        const acqPrice = c => Math.round(c.valuation * 1.2);
+        const REGS = [
+            { name: 'AI Safety Act', cost: 2000, rep: 3 }, { name: 'Compute Reporting Rule', cost: 800, rep: 0 },
+            { name: 'Data Privacy Directive', cost: 1500, rep: 2 }, { name: 'Model Licensing Law', cost: 3000, rep: -2 },
+            { name: 'Open Research Mandate', cost: 500, rep: 4 }, { name: 'Deepfake Labeling Act', cost: 700, rep: 2 },
+        ];
+        const LOBBY_COST = 100000;
+        const hireFee = e => Math.round(e.salary / 12);
+        const refreshCandidates = () => { gameState.candidates = Array.from({ length: 4 }, genEmployee); };
+
+        const EVENTS = [
+            () => { gameState.hype += 20; return ['A demo of your model went viral (+20 hype).', true]; },
+            () => { gameState.reputation = Math.max(0, gameState.reputation - 5); spend(50000, 'Data breach cleanup'); return ['Data breach! Reputation -5 and $50,000 cleanup.', false]; },
+            () => { gameState.gpuShortage = 15; return ['GPU shortage: training runs at half speed for 15 days.', false]; },
+            () => {
+                if (!gameState.employees.length) return ['A rival tried to poach your staff, but you have none.', true];
+                const [e] = gameState.employees.splice(randInt(0, gameState.employees.length - 1), 1);
+                return [`A rival poached ${e.name} (${e.position}).`, false];
+            },
+            () => { const a = randInt(5, 30) * 10000; spend(a, 'Lawsuit settlement'); return [`Lawsuit settled for ${usd(a)}.`, false]; },
+            () => { gameState.reputation += 4; return ['Glowing press coverage (+4 reputation).', true]; },
+            () => { const a = dailyIncome(); spend(a, 'Server outage'); return [`Server outage cost a day of revenue (${usd(a)}).`, false]; },
+            () => { const a = randInt(10, 50) * 10000; earn(a, 'Government contract'); return [`Won a government contract worth ${usd(a)}.`, true]; },
+            () => { gameState.researchPoints += 30; return ['Your team published a breakthrough paper (+30 RP).', true]; },
+            () => {
+                gameState.competitors.forEach(c => { c.valuation = Math.round(c.valuation * 0.85); });
+                gameState.hype = Math.max(0, gameState.hype - 10);
+                return ['Market crash: competitor valuations fell 15%, hype -10.', false];
+            },
+        ];
+        const ACHIEVEMENTS = [
+            ['first-model', 'First Steps', 'Finish training a model', () => gameState.models.some(m => m.score)],
+            ['first-release', 'Shipped It', 'Release a model', () => gameState.models.some(m => m.daysLive !== undefined)],
+            ['million', 'Millionaire', 'Hold $1,000,000 in cash', () => gameState.money >= 1e6],
+            ['ten-million', 'Deca-millionaire', 'Hold $10,000,000 in cash', () => gameState.money >= 1e7],
+            ['sota', 'State of the Art', 'Train a model scoring 90+', () => gameState.models.some(m => m.score >= 90)],
+            ['number-one', 'Top Dog', 'Reach #1 in the global rankings', () => rankings()[0].you],
+            ['fleet', 'Model Fleet', 'Own 10 models', () => gameState.models.length >= 10],
+            ['team', 'Growing Team', 'Employ 5 people', () => gameState.employees.length >= 5],
+            ['scholar', 'Scholar', 'Unlock every research', () => TECHS.every(t => hasTech(t.id))],
+            ['survivor', 'Survivor', 'Stay in business for 365 days', () => gameState.day >= 365],
+        ];
+        // Crises: a popup every 2-4 months that pauses time until the player picks how to respond.
+        // X = the stake, scaled to the company so it always hurts. Each choice returns [outcome text, good?].
+        const stake = () => Math.max(50000, Math.round(dailyIncome() * 20 / 1000) * 1000);
+        const hit = (money, rep, text) => { if (money) spend(money, 'Crisis'); if (rep) gameState.reputation = Math.max(0, gameState.reputation + rep); return [text, rep >= 0 && !money]; };
+        const chance = p => Math.random() < p;
+        const CRISES = [
+            { title: '🔓 Data breach', text: 'Hackers broke into your servers and stole customer data. Word has not got out yet.', choices: X => [
+                ['Disclose it and fix everything', `Lose ${usd(X)} and 3 reputation.`, () => hit(X, -3, 'You disclosed the breach. Customers appreciated the honesty.')],
+                ['Quietly patch it', 'Free, but 50% chance it leaks later: lose ' + usd(2 * X) + ' in fines and 15 reputation.', () => chance(0.5) ? hit(2 * X, -15, 'The cover-up leaked! Regulators fined you.') : hit(0, 0, 'Nobody found out. You got lucky.')],
+                ['Pay the hackers to delete it', `Lose ${usd(X / 2)}; 30% chance they leak it anyway (−10 reputation).`, () => chance(0.3) ? hit(X / 2, -10, 'The hackers took the money and leaked the data anyway.') : hit(X / 2, 0, 'The hackers kept their word. This time.')],
+            ] },
+            { title: '⚖️ Copyright lawsuit', text: 'A group of authors is suing you for training on their books without permission.', choices: X => [
+                ['Settle out of court', `Lose ${usd(1.5 * X)}.`, () => hit(1.5 * X, 0, 'You settled the lawsuit.')],
+                ['Fight it in court', `Lose ${usd(0.3 * X)} in legal fees; 50% chance you lose: another ${usd(3 * X)} and 5 reputation.`, () => chance(0.5) ? hit(3.3 * X, -5, 'You lost in court and paid heavy damages.') : hit(0.3 * X, 0, 'You won the case. Only legal fees paid.')],
+                ['Offer the authors a licensing deal', `Lose ${usd(X)} but gain 3 reputation.`, () => hit(X, 3, 'The authors accepted a licensing deal. The press loved it.')],
+            ] },
+            { title: '😱 Model scandal', text: 'Screenshots of one of your models giving dangerous advice are going viral.', when: () => gameState.models.some(m => m.released), choices: X => [
+                ['Apologize and patch it', `Lose ${usd(X / 2)} and 5 reputation.`, () => hit(X / 2, -5, 'You apologized and shipped a fix.')],
+                ['Take your models offline for a while', 'Every live model\'s demand drops by half for a while, but you gain 2 reputation.', () => { gameState.models.forEach(m => { if (m.released) m.demand = (m.demand ?? 1) * 0.5; }); return hit(0, 2, 'You pulled your models for a safety review. Users grumbled, critics approved.'); }],
+                ['Deny everything', '60% chance it backfires: lose 15 reputation and 20 hype.', () => { if (!chance(0.6)) return hit(0, 0, 'The story died down on its own.'); gameState.hype = Math.max(0, gameState.hype - 20); return hit(0, -15, 'The denial backfired badly.'); }],
+            ] },
+            { title: '💸 GPU price hike', text: 'Your chip supplier is raising prices on everything you already ordered.', choices: X => [
+                ['Pay the new price', `Lose ${usd(X)}.`, () => hit(X, 0, 'You paid the higher price.')],
+                ['Switch suppliers', 'Free, but training runs at half speed for 30 days.', () => { gameState.gpuShortage = Math.max(gameState.gpuShortage || 0, 30); return hit(0, 0, 'You switched suppliers. Training is slow for a month.'); }],
+                ['Negotiate hard', `50% chance you pay only ${usd(0.3 * X)}, 50% chance it costs ${usd(1.5 * X)}.`, () => chance(0.5) ? hit(0.3 * X, 0, 'Great negotiating! You got a discount.') : hit(1.5 * X, 0, 'The supplier called your bluff and charged even more.')],
+            ] },
+            { title: '🚪 Star employee leaving', text: 'One of your best people has an offer from a rival lab.', when: () => gameState.employees.length > 0, choices: X => [
+                ['Make a counter-offer', `Lose ${usd(X / 2)}; they stay.`, () => hit(X / 2, 0, 'They took your counter-offer and stayed.')],
+                ['Let them go', 'They leave and take 20 research points of know-how with them.', () => { gameState.employees.splice(randInt(0, gameState.employees.length - 1), 1); gameState.researchPoints = Math.max(0, gameState.researchPoints - 20); return hit(0, 0, 'They left for the rival lab.'); }],
+                ['Appeal to the mission', 'Free; 50% chance they leave anyway and talk badly about you (−5 reputation).', () => { if (!chance(0.5)) return hit(0, 0, 'They believe in the mission and stayed.'); gameState.employees.splice(randInt(0, gameState.employees.length - 1), 1); return hit(0, -5, 'They left anyway and badmouthed you on the way out.'); }],
+            ] },
+            { title: '🏛️ Regulator investigation', text: 'A government agency is investigating how you train your models.', choices: X => [
+                ['Cooperate fully', `Lose ${usd(0.8 * X)} in compliance work.`, () => hit(0.8 * X, 0, 'You cooperated and the case was closed.')],
+                ['Lobby to get it dropped', `Lose ${usd(0.4 * X)}; 50% chance it fails and you are fined ${usd(2 * X)}.`, () => chance(0.5) ? hit(2.4 * X, -3, 'Lobbying failed and you were fined.') : hit(0.4 * X, 0, 'The investigation was quietly dropped.')],
+                ['Ignore it', `70% chance of a ${usd(3 * X)} fine and −10 reputation.`, () => chance(0.7) ? hit(3 * X, -10, 'Ignoring regulators went badly: a big fine.') : hit(0, 0, 'The agency moved on to other targets.')],
+            ] },
+        ];
+        function openCrisis(i) {
+            const c = CRISES[i]; if (!c) return;
+            gameState.pendingCrisis = i; gameState.crisisStake ??= stake();
+            document.getElementById('modal-title').textContent = c.title;
+            document.getElementById('modal-body').innerHTML = `<p>${c.text}</p><p class="hint" style="margin-top:10px">Time is paused. How do you respond?</p>`;
+            document.getElementById('modal-footer').innerHTML = `<div style="display:grid;gap:10px;width:100%">${c.choices(gameState.crisisStake).map(([label, desc], k) =>
+                `<button class="btn btn-secondary" style="flex-direction:column;align-items:flex-start;text-align:left;white-space:normal" data-x="crisis" data-id="${k}"><span>${label}</span><small style="font-weight:500;color:var(--muted)">${desc}</small></button>`).join('')}</div>`;
+            document.getElementById('close-modal').style.display = 'none';
+            document.getElementById('modal-overlay').style.display = 'grid';
+        }
+        // Tutorial for new companies: each step opens its page behind the modal
+        const TUTORIAL = [
+            ['dashboard', '👋 Welcome, CEO', 'This is your <b>Dashboard</b>: money, reputation, daily income and expenses. Time runs on its own. Pause with ⏸ or <b>Space</b>, speed up with 1/2/3. Time is paused during this tour.'],
+            ['create-model', '🧠 Create a model', 'Everything starts here. Pick a family, size, precision and data. Bigger and better costs more but scores higher. Each option has a short explanation under it. Start small: a 7B model with standard data is a safe first build.'],
+            ['training', '⏳ Training Center', 'New models train here over in-game days. When training finishes, the model gets a <b>score</b> from 1 to 100.'],
+            ['models', '🚀 Release it', 'Go to <b>AI Models</b> and press <b>Release</b>. Released models earn money every day. Higher score means much more money. Older versions earn less once a newer one comes out.'],
+            ['employees', '👥 Grow the company', 'Hire staff, buy hardware in <b>Infrastructure</b> and unlock upgrades in the <b>Research Tree</b>. Watch your daily expenses: if money drops below zero, you go bankrupt.'],
+            ['investors', '💰 Funding', 'Short on cash? Investors put in more as your reputation grows. Loans and deals are in <b>Negotiations</b>.'],
+            ['events', '⚠️ Markets & crises', 'The market swings between boom and bust, and every few months a crisis needs your decision. Results show up here in <b>News & Events</b>. Good luck!'],
+        ];
+        function openTutorial(i) {
+            const [page, title, text] = TUTORIAL[i], last = i === TUTORIAL.length - 1;
+            setSpeed(0);
+            document.querySelector(`[data-page="${page}"]`).click();
+            document.getElementById('modal-title').textContent = `${title} (${i + 1}/${TUTORIAL.length})`;
+            document.getElementById('modal-body').innerHTML = `<p>${text}</p>`;
+            document.getElementById('modal-footer').innerHTML = (last ? '' : '<button class="btn btn-secondary" data-x="tutorial" data-id="-1">Skip tour</button>')
+                + `<button class="btn" data-x="tutorial" data-id="${last ? -1 : i + 1}">${last ? 'Start playing' : 'Next →'}</button>`;
+            document.getElementById('close-modal').style.display = 'none';
+            document.getElementById('modal-overlay').style.display = 'grid';
+        }
+
+        const logEvent = (text, good) => {
+            gameState.events.push({ date: gameDate(), text, good });
+            gameState.events = gameState.events.slice(-50);
+            notify(text, good ? 'success' : 'error');
+        };
+
+        // Runs once per in-game day, after the day's cash flow
+        function tickExtras(date) {
+            ensureExtras();
+            gameState.day++;
+            gameState.hype = Math.max(0, Math.round(gameState.hype * 0.97 * 10) / 10);
+            const phase = marketLabel();
+            if (gameState.day % 30 === 0) gameState.marketTarget = pick([0.65, 1, 1, 1.35]);
+            gameState.market = Math.round(((gameState.market ?? 1) + ((gameState.marketTarget ?? 1) - (gameState.market ?? 1)) * 0.1 + (Math.random() - 0.5) * 0.03) * 1000) / 1000;
+            if (marketLabel() !== phase) logEvent(`The AI market is now: ${marketLabel()} (all model income ×${gameState.market.toFixed(2)}).`, marketLabel() === '📈 Boom' || phase === '📉 Bust');
+            gameState.models.forEach(m => {
+                if (!m.released || !(Math.random() < (INCIDENT_ODDS[m.safety] || 0))) return;
+                gameState.reputation = Math.max(0, gameState.reputation - 8);
+                gameState.hype = Math.max(0, gameState.hype - 10);
+                m.demand = (m.demand ?? 1) * 0.5;
+                logEvent(`Safety incident: ${m.name} v${m.version} helped users do something harmful. Reputation -8, hype -10, its demand halved.`, false);
+            });
+            gameState.gpuShortage = Math.max(0, gameState.gpuShortage - 1);
+            gameState.grantCooldown = Math.max(0, gameState.grantCooldown - 1);
+            gameState.employees.forEach(e => { if (e.position === 'AI Researcher' && Math.random() < e.skillLevel / 100) gameState.researchPoints++; });
+            if (date.getDate() === 1 || !gameState.candidates.length) refreshCandidates();
+            const budget = gameState.models.filter(m => m.released && m.price === 'budget').length;
+            if (budget && gameState.day % 7 === 0) gameState.reputation += budget;
+
+            gameState.campaigns = gameState.campaigns.filter(c => {
+                const def = CAMPAIGNS.find(x => x.id === c.id);
+                gameState.hype = Math.min(100, gameState.hype + def.hype * 2 / def.days);
+                return --c.daysLeft > 0;
+            });
+
+            gameState.deals = gameState.deals.filter(d => {
+                if (d.active) { if (--d.daysLeft > 0) return true; notify(`Licensing deal with ${d.client} ended.`); return false; }
+                return --d.expires > 0;
+            });
+            if (Math.random() < 1 / 20 && gameState.deals.filter(d => !d.active).length < 3) {
+                gameState.deals.push({
+                    id: newId(), client: `${pick(['Global', 'United', 'First', 'Metro', 'Pacific', 'Atlas'])} ${pick(['Bank', 'Health', 'Retail', 'Logistics', 'Insurance', 'Telecom'])}`,
+                    minScore: randInt(40, 85), perDay: randInt(2, 20) * 500, days: randInt(30, 120), expires: 15, active: false
+                });
+            }
+
+            const upcoming = gameState.conferences.filter(c => !c.done);
+            if (upcoming.length < 2 && Math.random() < 1 / 10) {
+                const d = new Date(date); d.setDate(d.getDate() + randInt(10, 25));
+                gameState.conferences.push({ id: newId(), name: `${pick(['NeurAI', 'DeepConf', 'AI Summit', 'LearnCon', 'ModelWorld', 'Inference Expo'])} ${d.getFullYear()}`, date: d.toISOString(), fee: randInt(2, 10) * 10000, plan: null, done: false });
+            }
+            upcoming.filter(c => new Date(c.date) <= date).forEach(c => {
+                c.done = true;
+                if (c.plan === 'attend') {
+                    gameState.reputation += 5;
+                    if (Math.random() < 0.5) gameState.candidates.push(genEmployee());
+                    notify(`You attended ${c.name} (+5 reputation).`, 'success');
+                } else if (c.plan === 'present') {
+                    gameState.reputation += 12; gameState.hype += 5;
+                    notify(`Your talk at ${c.name} was a hit (+12 reputation).`, 'success');
+                }
+            });
+            gameState.conferences = gameState.conferences.slice(-8);
+
+            const proposed = gameState.regulations.filter(r => r.status === 'proposed');
+            if (Math.random() < 1 / 60 && proposed.length < 2) {
+                const reg = pick(REGS.filter(r => !gameState.regulations.some(x => x.name === r.name && x.status !== 'rejected')));
+                if (reg) { gameState.regulations.push({ ...reg, id: newId(), support: randInt(30, 70), daysLeft: 30, status: 'proposed' }); notify(`New bill proposed: ${reg.name}.`); }
+            }
+            proposed.forEach(r => {
+                if (--r.daysLeft > 0) return;
+                r.status = Math.random() * 100 < r.support ? 'passed' : 'rejected';
+                if (r.status === 'passed') gameState.reputation = Math.max(0, gameState.reputation + r.rep);
+                notify(`${r.name} was ${r.status}.`, r.status === 'passed' ? 'error' : 'success');
+            });
+
+            if (Math.random() < EVENT_CHANCE) logEvent(...pick(EVENTS)());
+            gameState.nextCrisis ??= gameState.day + randInt(60, 120);
+            if (EVENT_CHANCE && gameState.pendingCrisis == null && gameState.day >= gameState.nextCrisis) {
+                gameState.nextCrisis = gameState.day + randInt(60, 120);
+                openCrisis(pick(CRISES.map((c, i) => i).filter(i => !CRISES[i].when || CRISES[i].when())));
+            }
+
+            if (gameState.day % 7 === 0) gameState.history = [...gameState.history, { v: gameState.valuation, r: dailyIncome() }].slice(-104);
+            ACHIEVEMENTS.forEach(([id, name, , check]) => {
+                if (!gameState.achievements.includes(id) && check()) { gameState.achievements.push(id); notify(`🏆 Achievement unlocked: ${name}`, 'success'); }
+            });
+        }
+
+        const ACTIONS = {
+            hire(id) {
+                const c = byId(gameState.candidates, id);
+                if (!c || !pay(hireFee(c), `Hired ${c.name}`)) return;
+                gameState.employees.push(c);
+                gameState.candidates = gameState.candidates.filter(x => x !== c);
+                notify(`${c.name} joined as ${c.position}.`, 'success');
+            },
+            fire(id) {
+                const e = byId(gameState.employees, id);
+                if (!e || !confirm(`Fire ${e.name}? Severance is ${usd(e.salary / 12)}.`)) return;
+                spend(Math.round(e.salary / 12), `Severance for ${e.name}`);
+                gameState.employees = gameState.employees.filter(x => x !== e);
+            },
+            raise(id) {
+                const e = byId(gameState.employees, id);
+                if (!e) return;
+                e.salary = Math.round(e.salary * 1.1);
+                e.skillLevel = Math.min(100, e.skillLevel + 5);
+            },
+            buy(type) {
+                const h = HW[type];
+                if (!h || !pay(h.cost, `Bought ${type}`)) return;
+                gameState.infrastructure.push({ id: newId(), type, name: `${type} #${gameState.infrastructure.filter(x => x.type === type).length + 1}`, capacity: h.capacity, cost: h.cost });
+            },
+            sell(id) {
+                const h = byId(gameState.infrastructure, id);
+                if (!h) return;
+                if (gameState.infrastructure.length - 1 < Math.max(1, gameState.trainingProjects.length)) return notify('That machine is needed for running training jobs.', 'error');
+                earn(Math.round(h.cost / 2), `Sold ${h.name}`);
+                gameState.infrastructure = gameState.infrastructure.filter(x => x !== h);
+            },
+            research(id) {
+                const t = TECHS.find(x => x.id === id);
+                if (!t || hasTech(id) || !techUnlocked(t)) return;
+                if (gameState.researchPoints < t.cost) return notify(`${t.name} needs ${t.cost} RP.`, 'error');
+                gameState.researchPoints -= t.cost;
+                gameState.researchTree.push(id);
+                notify(`Researched ${t.name}: ${t.desc}.`, 'success');
+            },
+            campaign(id) {
+                const c = CAMPAIGNS.find(x => x.id === id);
+                if (!c || gameState.campaigns.some(x => x.id === id) || !pay(c.cost, c.name)) return;
+                gameState.reputation += c.rep;
+                gameState.campaigns.push({ id, daysLeft: c.days });
+                notify(`${c.name} launched.`, 'success');
+            },
+            tutorial(i) {
+                if (i >= 0) return openTutorial(Number(i));
+                document.getElementById('modal-overlay').style.display = 'none';
+                document.querySelector('[data-page="create-model"]').click();
+                setSpeed(1);
+            },
+            crisis(k) {
+                const c = CRISES[gameState.pendingCrisis], choice = c && c.choices(gameState.crisisStake)[k];
+                if (!choice) return;
+                const [text, good] = choice[2]();
+                gameState.pendingCrisis = null; gameState.crisisStake = null;
+                document.getElementById('modal-overlay').style.display = 'none';
+                logEvent(`${c.title}: ${text}`, good);
+            },
+            bench(id) {
+                const m = byId(gameState.models, id);
+                if (!m || !canBench(m) || !pay(BENCH_COST, `Benchmarks for ${m.name}`)) return;
+                const scores = Object.entries(SUITES).map(([suite, fits]) => {
+                    const score = Math.max(0, Math.min(100, m.score + (fits.includes(m.family) ? 8 : 0) + (suite === 'Safety' && hasTech('safety') ? 10 : 0) + randInt(-6, 6)));
+                    gameState.benchmarks.push({ model: `${m.name} v${m.version}`, suite, score, date: gameDate() });
+                    return score;
+                });
+                gameState.benchmarks = gameState.benchmarks.slice(-100);
+                const avg = Math.round(scores.reduce((a, b) => a + b) / scores.length);
+                const best = Math.max(0, ...gameState.competitors.map(c => c.bestScore || 0));
+                if (avg > best) { gameState.reputation += 3; notify(`${m.name} is state of the art (avg ${avg} vs ${best})! +3 reputation.`, 'success'); }
+                else notify(`${m.name} averaged ${avg}; the leader scores ${best}.`);
+            },
+            price(id, v) { const m = byId(gameState.models, id); if (m && PRICING[v]) m.price = v; },
+            retire(id) {
+                const m = byId(gameState.models, id);
+                if (!m || !confirm(`Retire ${m.name}? It stops earning and costing.`)) return;
+                m.released = false; m.status = 'retired';
+            },
+            retirefamily(name) {
+                const live = gameState.models.filter(m => m.name === name && m.released);
+                if (!live.length || !confirm(`Retire all ${live.length} live version${live.length > 1 ? 's' : ''} of ${name}? They stop earning and costing. This cannot be undone.`)) return;
+                live.forEach(m => { m.released = false; m.status = 'retired'; });
+                collapsedFams.add(name);
+                notify(`${name} family retired.`);
+            },
+            opensource(id) {
+                const m = byId(gameState.models, id);
+                if (!m || !confirm(`Open-source ${m.name}? It stops earning but boosts reputation and hype.`)) return;
+                m.released = false; m.status = 'open-sourced';
+                gameState.reputation += Math.round(m.score / 3);
+                gameState.hype = Math.min(100, gameState.hype + 10);
+            },
+            nextver(id) {
+                const m = byId(gameState.models, id);
+                if (!m || hasSuccessor(m)) return;
+                // Prefill the Create Model form; the player picks training options there
+                nextOf = m.id;
+                const nameInput = document.getElementById('model-name');
+                nameInput.value = m.name; nameInput.readOnly = true;
+                document.getElementById('model-version').value = `${Math.floor(parseFloat(m.version) || 1) + 1}.0`;
+                Object.entries({ 'model-family': m.family, 'model-architecture': m.architecture, 'model-size': m.size, 'model-precision': m.precision, 'model-context': m.context, 'model-safety': m.safety,
+                    'data-quality': m.dataQuality, 'training-duration': m.duration, 'training-objectives': (m.objectives || [])[0] }).forEach(([f, v]) => setDropdown(f, v));
+                document.querySelector('[data-page="create-model"]').click();
+                notify(`Choose training options for ${m.name} v${document.getElementById('model-version').value}, then start training.`);
+            },
+            loan(i) {
+                const l = LOANS[i];
+                if (!l) return;
+                if (totalDebt() + l.amount > debtLimit()) return notify(`The bank caps your debt at ${usd(debtLimit())}.`, 'error');
+                earn(l.amount, 'Bank loan');
+                gameState.loans.push({ id: newId(), ...l });
+            },
+            repay(id) {
+                const l = byId(gameState.loans, id);
+                if (!l || !pay(l.amount, 'Loan repayment')) return;
+                gameState.loans = gameState.loans.filter(x => x !== l);
+            },
+            deal(id) {
+                const d = byId(gameState.deals, id);
+                if (!d || d.active) return;
+                if (!gameState.models.some(m => m.released && m.score >= d.minScore)) return notify(`${d.client} needs a released model scoring ${d.minScore}+.`, 'error');
+                d.active = true; d.daysLeft = d.days;
+                notify(`Signed with ${d.client}: ${usd(d.perDay)}/day for ${d.days} days.`, 'success');
+            },
+            acquire(id) {
+                const c = byId(gameState.competitors, id);
+                if (!c || !confirm(`Acquire ${c.name} for ${usd(acqPrice(c))}?`) || !pay(acqPrice(c), `Acquired ${c.name}`)) return;
+                gameState.subsidiaries.push({ name: c.name, income: Math.round(competitorIncome(c)) });
+                gameState.competitors = gameState.competitors.filter(x => x !== c);
+                gameState.reputation += 5;
+                notify(`${c.name} is now your subsidiary.`, 'success');
+            },
+            attend(id) { const c = byId(gameState.conferences, id); if (c && !c.plan && !c.done && pay(c.fee, `${c.name} tickets`)) c.plan = 'attend'; },
+            present(id) {
+                const c = byId(gameState.conferences, id);
+                if (!c || c.plan || c.done) return;
+                if (gameState.researchPoints < 20) return notify('A paper needs 20 RP.', 'error');
+                if (pay(c.fee, `${c.name} speaker slot`)) { gameState.researchPoints -= 20; c.plan = 'present'; }
+            },
+            lobby(id, v) {
+                const r = byId(gameState.regulations, id);
+                if (!r || r.status !== 'proposed' || !pay(LOBBY_COST, `Lobbying on ${r.name}`)) return;
+                r.support = Math.max(0, Math.min(100, r.support + (v === 'for' ? 15 : -15)));
+            },
+            grant() {
+                if (gameState.reputation < 30 || gameState.grantCooldown > 0) return;
+                earn(250000 + gameState.reputation * 5000, 'Government research grant');
+                gameState.grantCooldown = 90;
+            },
+        };
+        document.addEventListener('click', e => {
+            const b = e.target.closest('[data-x]');
+            if (!b || !ACTIONS[b.dataset.x]) return;
+            if (!gameState.gameStarted || gameState.bankrupt) return notify('Start a company (or reset after bankruptcy) first.', 'error');
+            ensureExtras();
+            ACTIONS[b.dataset.x](b.dataset.id, b.dataset.v);
+            gameState.save(true);
+            updateUI();
+        });
+
+        // Speed controls: buttons, Space to pause, 1/2/3 for speeds
+        function setSpeed(s) {
+            gameSpeed = s;
+            document.querySelectorAll('[data-speed]').forEach(b => b.classList.toggle('active', Number(b.dataset.speed) === s));
+        }
+        document.querySelectorAll('[data-speed]').forEach(b => b.addEventListener('click', () => setSpeed(Number(b.dataset.speed))));
+        document.addEventListener('keydown', e => {
+            if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+            if (e.code === 'Space') { e.preventDefault(); setSpeed(gameSpeed ? 0 : 1); }
+            const s = { Digit1: 1, Digit2: 2, Digit3: 5 }[e.code];
+            if (s) setSpeed(s);
+        });
+        setSpeed(1);
+
+        const btn = (x, id, label, cls = 'btn-secondary', v = '', disabled = false) =>
+            `<button class="btn btn-sm ${cls}" data-x="${x}" data-id="${escapeHtml(id)}"${v ? ` data-v="${v}"` : ''}${disabled ? ' disabled' : ''}>${label}</button>`;
+        const card = (title, body, cls = '') => `<div class="card ${cls}"><div class="card-header"><div class="card-title">${title}</div></div>${body}</div>`;
+        const stats = (...items) => `<div class="model-stats">${items.filter(Boolean).map(i => `<span>${i}</span>`).join('')}</div>`;
+        const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+        // A newer generation of the same model exists (training or done), so only the newest can be upgraded
+        // retired and open-sourced models are off the market, so they can't be benchmarked
+        const canBench = m => m.score && !['retired', 'open-sourced'].includes(m.status);
+        const hasSuccessor = m => gameState.models.some(x => x.name === m.name && (x.generation || 1) > (m.generation || 1));
+        function modelActions(m) {
+            const acts = [];
+            if (m.released) {
+                acts.push(`<span class="seg">${Object.keys(PRICING).map(p => btn('price', m.id, p, (m.price || 'standard') === p ? 'on' : 'btn-ghost', p)).join('')}</span>`);
+                acts.push(btn('retire', m.id, 'Retire', 'btn-ghost'));
+            }
+            if (m.released || m.status === 'retired') acts.push(btn('opensource', m.id, 'Open-source', 'btn-ghost'));
+            if (canBench(m)) acts.push(btn('bench', m.id, `Benchmark ${usd(BENCH_COST)}`, 'btn-ghost'));
+            if (m.score && !hasSuccessor(m)) acts.push(btn('nextver', m.id, 'Next version'));
+            return `<div class="row-actions">${acts.join('')}</div>`;
+        }
+        const revenuePct = m => Math.round(100 * (m.demand ?? 1) * 0.5 ** ((m.daysLive || 0) * (m.price === 'premium' ? 2 : 1) / 365 + newerReleased(m)));
+
+        function sparkline(id, values, label) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (values.length < 2) { el.innerHTML = `<p class="muted">${label}: data appears after two in-game weeks.</p>`; return; }
+            const max = Math.max(...values), min = Math.min(...values), span = max - min || 1;
+            const pts = values.map((v, i) => `${(i / (values.length - 1) * 300).toFixed(1)},${(110 - (v - min) / span * 100).toFixed(1)}`).join(' ');
+            el.innerHTML = `<svg class="spark" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="${label} trend"><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${pts}"/></svg><div class="model-stats"><span>Low ${usd(min)}</span><span>High ${usd(max)}</span></div>`;
+        }
+
+        function renderExtras() {
+            ensureExtras();
+            const g = gameState;
+            const hb = document.getElementById('hype-badge'); if (hb) hb.textContent = `🔥 ${Math.round(g.hype)}`;
+            const mb = document.getElementById('market-badge'); if (mb) mb.textContent = marketLabel();
+            const db = document.getElementById('day-badge'); if (db) db.textContent = `Day ${g.day}`;
+            sparkline('revenue-chart', g.history.map(h => h.r), 'Daily revenue');
+            sparkline('valuation-chart', g.history.map(h => h.v), 'Valuation');
+
+            setHtml('employee-list', `
+                ${stats(`Payroll: ${usd(payroll())}/day`, `Researchers: ${countRole('AI Researcher')} (make RP)`, `ML engineers: ${countRole('ML Engineer')} (faster training)`, `Data engineers: ${countRole('Data Engineer')} (better scores)`, `Infra engineers: ${countRole('Infra Engineer')} (cheaper training)`)}
+                <div class="xgrid">${g.employees.map(e => card(escapeHtml(e.name), stats(escapeHtml(e.position), `Skill ${e.skillLevel}`, `${usd(e.salary)}/yr`) + `<div class="row-actions">${btn('raise', e.id, 'Raise +10%', 'btn-ghost')}${btn('fire', e.id, 'Fire', 'btn-danger')}</div>`)).join('') || '<p>No staff yet.</p>'}</div>
+                <h3>Candidates</h3>
+                <div class="xgrid">${g.candidates.map(e => card(escapeHtml(e.name), stats(escapeHtml(e.position), `Skill ${e.skillLevel}`, `${e.experience} yrs`, `${usd(e.salary)}/yr`) + `<div class="row-actions">${btn('hire', e.id, `Hire (${usd(hireFee(e))} fee)`, '')}</div>`)).join('')}</div>`);
+
+            setHtml('hardware-list', `
+                ${stats(`Compute: ${totalCompute().toLocaleString()} TFLOPS`, `Training slots: ${g.trainingProjects.length}/${trainingSlots()}`, `Training speed: ×${trainSpeed().toFixed(2)}${g.gpuShortage ? ' (GPU shortage!)' : ''}`)}
+                <div class="row-actions">${Object.entries(HW).map(([t, h]) => btn('buy', t, `Buy ${t} (${usd(h.cost)}, ${usd(h.upkeep)}/day)`, '')).join('')}</div>
+                <div class="xgrid">${g.infrastructure.map(h => card(escapeHtml(h.name), stats(`${(h.capacity || 0).toLocaleString()} TFLOPS`, `Upkeep ${usd(HW[h.type]?.upkeep ?? 150)}/day`) + `<div class="row-actions">${btn('sell', h.id, `Sell (${usd((h.cost || 0) / 2)})`, 'btn-danger')}</div>`)).join('')}</div>`);
+
+            setHtml('tech-tree', `${stats(`Research points: ${g.researchPoints}`)}<div class="xgrid">${TECHS.map(t => {
+                const owned = hasTech(t.id), open = techUnlocked(t);
+                return card(t.name, `<p>${t.desc}</p>${stats(`${t.cost} RP`, t.req ? `Needs: ${t.req.map(r => TECHS.find(x => x.id === r).name).join(', ')}` : '')}<div class="row-actions">${owned ? '<span class="badge">Researched</span>' : btn('research', t.id, 'Research', '', '', !open || g.researchPoints < t.cost)}</div>`, owned ? 'owned' : open ? '' : 'locked');
+            }).join('')}</div>`);
+
+            setHtml('marketing-activities', `${stats(`Hype: ${Math.round(g.hype)} (+${Math.round(g.hype)}% income, fades 3%/day)`)}
+                <div class="xgrid">${CAMPAIGNS.map(c => {
+                    const run = g.campaigns.find(x => x.id === c.id);
+                    return card(c.name, stats(usd(c.cost), `${c.days} days`, `+${c.rep} reputation`) + `<div class="row-actions">${run ? `<span class="badge">Running · ${run.daysLeft} days left</span>` : btn('campaign', c.id, 'Launch', '')}</div>`);
+                }).join('')}</div>`);
+
+            const trained = g.models.filter(canBench);
+            const bestBy = suite => Math.max(0, ...g.benchmarks.filter(b => b.suite === suite).map(b => b.score));
+            const leader = Math.max(0, ...g.competitors.map(c => c.bestScore || 0));
+            setHtml('benchmark-results', `
+                <div class="row-actions">${trained.map(m => btn('bench', m.id, `Run on ${escapeHtml(m.name)} v${escapeHtml(m.version)} (${usd(BENCH_COST)})`, '')).join('') || '<p>Train a model first.</p>'}</div>
+                <table class="xtable"><tr><th>Suite</th><th>Your best</th><th>Top competitor</th></tr>
+                ${Object.keys(SUITES).map(s => `<tr${bestBy(s) > leader ? ' class="best"' : ''}><td>${s}</td><td>${bestBy(s) || '-'}</td><td>${leader}</td></tr>`).join('')}</table>
+                <h3>History</h3><table class="xtable"><tr><th>Date</th><th>Model</th><th>Suite</th><th>Score</th></tr>
+                ${g.benchmarks.slice(-15).reverse().map(b => `<tr><td>${escapeHtml(b.date)}</td><td>${escapeHtml(b.model)}</td><td>${escapeHtml(b.suite)}</td><td>${b.score}</td></tr>`).join('')}</table>`);
+
+            const cols = { name: 'Model', family: 'Family', size: 'Size', score: 'Score', income: 'Income/day', daysLive: 'Days live', status: 'Status' };
+            const rows = g.models.map(m => ({ id: m.id, name: `${m.name} v${m.version}`, family: m.family, size: m.size, score: m.score || 0, income: m.released ? modelIncome(m) : 0, daysLive: m.daysLive || 0, status: m.status }));
+            rows.sort((a, b) => typeof a[compareSort] === 'number' ? b[compareSort] - a[compareSort] : String(a[compareSort]).localeCompare(String(b[compareSort])));
+            const top = Math.max(0, ...rows.map(r => r.score));
+            setHtml('comparison-results', rows.length ? `<table class="xtable"><tr>${Object.entries(cols).map(([k, v]) => `<th data-sort="${k}">${v}${k === compareSort ? ' ▾' : ''}</th>`).join('')}</tr>
+                ${rows.map(r => `<tr${r.score && r.score === top ? ' class="best"' : ''}>${Object.keys(cols).map(k => `<td>${k === 'income' ? usd(r[k]) : escapeHtml(r[k])}</td>`).join('')}</tr>`).join('')}</table>` : '<p>No models yet.</p>');
+
+            setHtml('negotiation-list', `
+                <h3>Bank loans</h3>${stats(`Debt: ${usd(totalDebt())} of ${usd(debtLimit())} limit`)}
+                <div class="row-actions">${LOANS.map((l, i) => btn('loan', i, `Borrow ${usd(l.amount)} (${(l.rate * 36500).toFixed(1)}%/yr)`, '')).join('')}</div>
+                <div class="xgrid">${g.loans.map(l => card(usd(l.amount), stats(`Interest ${usd(l.amount * l.rate)}/day`) + `<div class="row-actions">${btn('repay', l.id, 'Repay')}</div>`)).join('')}</div>
+                <h3>Licensing deals</h3>
+                <div class="xgrid">${g.deals.map(d => card(escapeHtml(d.client), stats(`${usd(d.perDay)}/day`, `${d.days} days`, `Needs score ${d.minScore}+`, d.active ? `${d.daysLeft} days left` : `Offer expires in ${d.expires} days`) + (d.active ? '<span class="badge">Active</span>' : `<div class="row-actions">${btn('deal', d.id, 'Sign', '')}</div>`))).join('') || '<p>No offers right now. Clients reach out over time.</p>'}</div>
+                <h3>Acquisitions</h3>
+                ${g.subsidiaries.length ? stats(...g.subsidiaries.map(s => `${escapeHtml(s.name)}: ${usd(s.income)}/day`)) : ''}
+                <div class="xgrid">${[...g.competitors].sort((a, b) => a.valuation - b.valuation).slice(0, 3).map(c => card(escapeHtml(c.name), stats(`Price ${usd(acqPrice(c))}`, `Adds ${usd(competitorIncome(c))}/day`) + `<div class="row-actions">${btn('acquire', c.id, 'Acquire', '', '', g.money < acqPrice(c))}</div>`)).join('')}</div>`);
+
+            setHtml('conference-list', `<div class="xgrid">${[...g.conferences].reverse().map(c => card(escapeHtml(c.name), stats(new Date(c.date).toLocaleDateString('en-US'), `Fee ${usd(c.fee)}`, c.done ? 'Finished' : '') +
+                (c.plan ? `<span class="badge">${c.plan === 'present' ? 'Presenting' : 'Attending'}</span>` : c.done ? '' : `<div class="row-actions">${btn('attend', c.id, 'Attend (+5 rep)', '')}${btn('present', c.id, 'Present a paper (20 RP, +12 rep)')}</div>`))).join('') || '<p>No conferences announced yet.</p>'}</div>`);
+
+            setHtml('regulation-list', `
+                ${card('Research grant', stats('Needs 30 reputation', `Pays ${usd(250000 + g.reputation * 5000)}`, g.grantCooldown ? `Next in ${g.grantCooldown} days` : 'Available') + `<div class="row-actions">${btn('grant', '', 'Apply', '', '', g.reputation < 30 || g.grantCooldown > 0)}</div>`)}
+                ${stats(`Corporate tax: 20% of profit (${usd(dailyTax() * 30)}/month)`)}
+                <div class="xgrid">${[...g.regulations].reverse().slice(0, 8).map(r => card(escapeHtml(r.name), stats(`Compliance ${usd(r.cost)}/day`, `Reputation ${r.rep >= 0 ? '+' : ''}${r.rep}`, r.status === 'proposed' ? `Support ${r.support}% · vote in ${r.daysLeft} days` : r.status) +
+                    (r.status === 'proposed' ? `<div class="row-actions">${btn('lobby', r.id, `Lobby for (${usd(LOBBY_COST)})`, 'btn-ghost', 'for')}${btn('lobby', r.id, `Lobby against (${usd(LOBBY_COST)})`, 'btn-ghost', 'against')}</div>` : ''))).join('') || '<p>No bills in progress.</p>'}</div>`);
+
+            setHtml('event-list', [...g.events].reverse().map(e => `<div class="model-stats"><span>${escapeHtml(e.date)}</span><span class="${e.good ? 'ev-good' : 'ev-bad'}">${escapeHtml(e.text)}</span></div>`).join('') || '<p>Nothing has happened yet.</p>');
+
+            setHtml('achievement-list', `${stats(`${g.achievements.length}/${ACHIEVEMENTS.length} unlocked`)}<div class="xgrid">${ACHIEVEMENTS.map(([id, name, desc]) =>
+                card(`${g.achievements.includes(id) ? '🏆' : '🔒'} ${name}`, `<p>${desc}</p>`, g.achievements.includes(id) ? 'owned' : 'locked')).join('')}</div>`);
+        }
+        document.getElementById('comparison-results').addEventListener('click', e => {
+            const th = e.target.closest('[data-sort]');
+            if (th) { compareSort = th.dataset.sort; renderExtras(); }
+        });
+
+        // Sidebar groups remember open/closed per browser
+        document.querySelectorAll('.sidebar-menu details').forEach(d => {
+            const key = 'navgroup:' + d.dataset.group;
+            try { if (localStorage.getItem(key) === 'closed') d.open = false; } catch {}
+            d.addEventListener('toggle', () => { try { localStorage.setItem(key, d.open ? 'open' : 'closed'); } catch {} });
+        });
+
+        // Button sounds, synthesized with Web Audio (no files needed)
+        let soundOn = true, audioCtx;
+        try { soundOn = localStorage.getItem('sound') !== 'off'; } catch {}
+        function blip(freq, len = .06, type = 'triangle', vol = .08) {
+            if (!soundOn || !window.AudioContext) return;
+            audioCtx ||= new AudioContext();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime;
+            o.type = type; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * .6, t + len);
+            g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + len);
+            o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + len);
+        }
+        const setSoundIcon = () => { const b = document.getElementById('sound-toggle'); b.textContent = soundOn ? '🔊' : '🔇'; b.setAttribute('aria-pressed', soundOn); };
+        setSoundIcon();
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            soundOn = !soundOn; setSoundIcon();
+            try { localStorage.setItem('sound', soundOn ? 'on' : 'off'); } catch {}
+        });
+        document.addEventListener('click', e => {
+            const el = e.target.closest('button, .btn, .sidebar-menu a, summary, .dropdown-option');
+            if (!el || el.disabled) return;
+            // gold buttons get a brighter two-note "coin" sound, everything else a soft tick
+            if (el.classList.contains('btn-danger')) blip(220, .12, 'square', .04);
+            else if (el.classList.contains('btn') && !el.classList.contains('btn-ghost') && !el.classList.contains('btn-secondary')) { blip(880, .08); setTimeout(() => blip(1320, .12), 60); }
+            else blip(600, .04);
+        });
+
+        // Initialize the game when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame();
+            initDropdowns();
+            
+            if (!gameState.gameStarted) seedWorld();
+            renderSaveSlots();
+        });
+    </script>
+</body>
+</html>
