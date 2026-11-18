@@ -65,19 +65,11 @@ See [FEATURES.md](FEATURES.md) for the full list: employees, hardware, the resea
 
 ## Development
 
-No dependencies are needed to play. The tests use [jsdom](https://github.com/jsdom/jsdom) and need Node.js 18 or newer:
-
-```sh
-npm install
-npm test
-```
-
 ### Project layout
 
 ```
 index.html              the whole game (HTML, CSS and JavaScript)
 Play.bat                Windows shortcut that opens index.html in your browser
-tests/game.test.cjs     smoke tests run in a simulated browser
 FEATURES.md             feature list
 ```
 
